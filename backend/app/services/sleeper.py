@@ -1,29 +1,51 @@
 """Sleeper Fantasy Football API service with in-memory caching."""
 
 import time
+from collections import OrderedDict
 from typing import Any
 
 import httpx
 
 SLEEPER_BASE_URL = "https://api.sleeper.app/v1"
 # Cache TTL in seconds: player list gets a long TTL; matchups/rosters get shorter ones
-_CACHE: dict[str, tuple[float, Any]] = {}
+_CACHE: OrderedDict[str, tuple[float, Any]] = OrderedDict()
 _PLAYERS_TTL = 3600  # 1 hour – Sleeper recommends calling /players sparingly
 _DEFAULT_TTL = 300   # 5 minutes
+_MAX_CACHE_SIZE = 1024
+
+
+def _purge_expired(now: float) -> None:
+    """Remove expired cache entries."""
+    expired_urls = [
+        cached_url
+        for cached_url, (expires_at, _) in _CACHE.items()
+        if expires_at <= now
+    ]
+    for cached_url in expired_urls:
+        _CACHE.pop(cached_url, None)
 
 
 def _get(url: str, ttl: int = _DEFAULT_TTL) -> Any:
     """Fetch *url* from Sleeper API, returning a cached response when fresh."""
     now = time.monotonic()
+    _purge_expired(now)
+
     if url in _CACHE:
-        ts, data = _CACHE[url]
-        if now - ts < ttl:
+        expires_at, data = _CACHE[url]
+        if now < expires_at:
+            _CACHE.move_to_end(url)
             return data
+        _CACHE.pop(url, None)
+
     with httpx.Client(timeout=15) as client:
         response = client.get(url)
         response.raise_for_status()
         data = response.json()
-    _CACHE[url] = (now, data)
+
+    _CACHE[url] = (now + ttl, data)
+    _CACHE.move_to_end(url)
+    if len(_CACHE) > _MAX_CACHE_SIZE:
+        _CACHE.popitem(last=False)
     return data
 
 
@@ -1326,6 +1348,16 @@ def stat_dynasty_legacy_score(
         eff_data[rid]["actual"] += actual
         eff_data[rid]["optimal"] += optimal
 
+    try:
+        waiver_rows = stat_waiver_roi(league_id, current_week)
+        waiver_roi = {
+            int(row["roster_id"]): float(row["waiver_roi_points"])
+            for row in waiver_rows
+        }
+    except Exception:
+        waiver_roi = dict.fromkeys(wins, 0.0)
+    max_waiver_roi = max(waiver_roi.values(), default=0.0)
+
     result = []
     for rid in wins:
         user = rum.get(rid, {})
@@ -1334,8 +1366,8 @@ def stat_dynasty_legacy_score(
         playoff_score = 1.0 if rid in playoff_rids else 0.0
         eff = eff_data[rid]
         eff_score = eff["actual"] / eff["optimal"] if eff["optimal"] > 0 else 0.0
-        # Simplified waiver contribution (placeholder)
-        waiver_score = 0.5
+        waiver_points = waiver_roi.get(rid, 0.0)
+        waiver_score = waiver_points / max_waiver_roi if max_waiver_roi > 0 else 0.0
 
         legacy = round(
             win_score * 0.30
@@ -1350,6 +1382,7 @@ def stat_dynasty_legacy_score(
             "legacy_score": legacy,
             "wins": wins[rid],
             "total_points": round(total_pts[rid], 2),
+            "waiver_roi_points": round(waiver_points, 2),
             "made_playoffs": rid in playoff_rids,
             "display_name": user.get("display_name", f"Team {rid}"),
             "avatar": user.get("avatar"),

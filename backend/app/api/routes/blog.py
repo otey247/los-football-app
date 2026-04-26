@@ -9,6 +9,8 @@ from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     BlogPost,
     BlogPostCreate,
+    BlogPostList,
+    BlogPostListPublic,
     BlogPostPublic,
     BlogPostsPublic,
     BlogPostUpdate,
@@ -32,36 +34,50 @@ def _to_public(post: BlogPost, author: User | None = None) -> BlogPostPublic:
     )
 
 
-@router.get("/", response_model=BlogPostsPublic)
+def _to_list_public(post: BlogPost, author: User | None = None) -> BlogPostListPublic:
+    resolved_author = author or post.author
+    author_name = (
+        resolved_author.full_name or resolved_author.email
+        if resolved_author
+        else None
+    )
+    return BlogPostListPublic(
+        title=post.title,
+        slug=post.slug,
+        excerpt=post.excerpt,
+        published=post.published,
+        id=post.id,
+        created_at=post.created_at,
+        updated_at=post.updated_at,
+        author_id=post.author_id,
+        author_name=author_name,
+    )
+
+
+@router.get("/", response_model=BlogPostList)
 def read_blog_posts(
     session: SessionDep,
     skip: int = 0,
     limit: int = 50,
-    published_only: bool = True,
 ) -> Any:
-    """Retrieve blog posts. Non-superusers only see published posts."""
-    if published_only:
-        count_statement = (
-            select(func.count()).select_from(BlogPost).where(BlogPost.published.is_(True))  # type: ignore[attr-defined]
-        )
-        statement = (
-            select(BlogPost)
-            .where(BlogPost.published.is_(True))  # type: ignore[attr-defined]
-            .order_by(col(BlogPost.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
-    else:
-        count_statement = select(func.count()).select_from(BlogPost)
-        statement = (
-            select(BlogPost)
-            .order_by(col(BlogPost.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
+    """Retrieve published blog posts."""
+    count_statement = (
+        select(func.count()).select_from(BlogPost).where(BlogPost.published.is_(True))  # type: ignore[attr-defined]
+    )
+    statement = (
+        select(BlogPost, User)
+        .join(User, BlogPost.author_id == User.id)
+        .where(BlogPost.published.is_(True))  # type: ignore[attr-defined]
+        .order_by(col(BlogPost.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
     count = session.exec(count_statement).one()
     posts = session.exec(statement).all()
-    return BlogPostsPublic(data=[_to_public(p) for p in posts], count=count)
+    return BlogPostList(
+        data=[_to_list_public(post, author) for post, author in posts],
+        count=count,
+    )
 
 
 @router.get("/admin", response_model=BlogPostsPublic)
@@ -77,13 +93,17 @@ def read_all_blog_posts(
     count_statement = select(func.count()).select_from(BlogPost)
     count = session.exec(count_statement).one()
     statement = (
-        select(BlogPost)
+        select(BlogPost, User)
+        .join(User, BlogPost.author_id == User.id)
         .order_by(col(BlogPost.created_at).desc())
         .offset(skip)
         .limit(limit)
     )
     posts = session.exec(statement).all()
-    return BlogPostsPublic(data=[_to_public(p) for p in posts], count=count)
+    return BlogPostsPublic(
+        data=[_to_public(post, author) for post, author in posts],
+        count=count,
+    )
 
 
 @router.get("/{id}", response_model=BlogPostPublic)

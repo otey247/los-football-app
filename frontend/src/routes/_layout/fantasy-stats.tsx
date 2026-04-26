@@ -212,9 +212,15 @@ function FantasyStats() {
   const [inputLeagueId, setInputLeagueId] = useState(leagueId)
   const [filterCategory, setFilterCategory] = useState<string>("all")
 
-  const { data: statsMeta, isLoading: metaLoading } = useQuery({
+  const {
+    data: statsMeta,
+    isLoading: metaLoading,
+    isError: metaError,
+    refetch: refetchMeta,
+  } = useQuery({
     queryKey: ["sleeper-meta"],
     queryFn: SleeperService.getStatsMeta,
+    retry: false,
   })
 
   const categories = statsMeta
@@ -317,6 +323,21 @@ function FantasyStats() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      ) : metaError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+            <Info className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="font-medium">Unable to load fantasy stat cards</p>
+              <p className="text-sm text-muted-foreground">
+                Check that the backend is running and try again.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchMeta()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredStats?.map((meta) => (

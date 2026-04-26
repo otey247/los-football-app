@@ -30,8 +30,25 @@ export interface BlogPost {
   author_name: string | null
 }
 
+export interface BlogPostSummary {
+  id: string
+  title: string
+  slug: string
+  excerpt: string | null
+  published: boolean
+  created_at: string | null
+  updated_at: string | null
+  author_id: string
+  author_name: string | null
+}
+
 export interface BlogPostsPublic {
   data: BlogPost[]
+  count: number
+}
+
+export interface BlogPostListPublic {
+  data: BlogPostSummary[]
   count: number
 }
 
@@ -100,10 +117,8 @@ export const SleeperService = {
 // ---- Blog API -------------------------------------------------------------
 
 export const BlogService = {
-  async getPosts(publishedOnly = true): Promise<BlogPostsPublic> {
-    const res = await axios.get(`${getBaseUrl()}/api/v1/blog/`, {
-      params: { published_only: publishedOnly },
-    })
+  async getPosts(): Promise<BlogPostListPublic> {
+    const res = await axios.get(`${getBaseUrl()}/api/v1/blog/`)
     return res.data
   },
 

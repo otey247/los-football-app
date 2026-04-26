@@ -159,6 +159,23 @@ class BlogPostsPublic(SQLModel):
     count: int
 
 
+class BlogPostListPublic(SQLModel):
+    title: str
+    slug: str
+    excerpt: str | None = None
+    published: bool
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    author_id: uuid.UUID
+    author_name: str | None = None
+
+
+class BlogPostList(SQLModel):
+    data: list[BlogPostListPublic]
+    count: int
+
+
 # Generic message
 class Message(SQLModel):
     message: str

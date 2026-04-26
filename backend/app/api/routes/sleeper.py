@@ -79,6 +79,11 @@ def _current_week(league_id: str) -> int:
         return 1
 
 
+def _requested_week(league_id: str, week: int | None) -> int:
+    current = _current_week(league_id)
+    return min(week, current) if week is not None else current
+
+
 def _handle_sleeper_error(exc: Exception, league_id: str = "") -> None:
     if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404:
         detail = f"League '{league_id}' not found on Sleeper" if league_id else "League not found on Sleeper"
@@ -119,7 +124,7 @@ def get_league_info(
 def get_stat(
     stat_key: str,
     league_id: str = Query(default=""),
-    week: int | None = Query(default=None),
+    week: int | None = Query(default=None, ge=1, le=18),
 ) -> Any:
     """
     Calculate and return a specific stat.
@@ -134,7 +139,7 @@ def get_stat(
             status_code=400,
             detail="No league_id provided and SLEEPER_LEAGUE_ID is not configured",
         )
-    current = week or _current_week(lid)
+    current = _requested_week(lid, week)
     try:
         return fn(lid, current)
     except HTTPException:

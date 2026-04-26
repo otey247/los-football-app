@@ -280,9 +280,15 @@ function SuperAdmin() {
   )
   const [deletePost, setDeletePost] = useState<BlogPost | null>(null)
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch: refetchPosts,
+  } = useQuery({
     queryKey: ["blog-admin"],
     queryFn: () => BlogService.getAllPostsAdmin(),
+    retry: false,
   })
 
   const deleteMutation = useMutation({
@@ -316,6 +322,20 @@ function SuperAdmin() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      )}
+
+      {isError && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <p className="font-medium">Unable to load blog posts</p>
+            <p className="text-sm text-muted-foreground">
+              Your session may have expired or the backend may be unavailable.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetchPosts()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {data && data.data.length === 0 && (
