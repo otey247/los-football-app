@@ -42,6 +42,26 @@
 
 [![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
+### Fantasy Football Stats
+
+Sleeper-powered fantasy football stat cards for league power rankings, schedule luck, lineup optimization, waiver ROI, draft ROI, trade value, playoff odds, and more.
+
+![Fantasy Stats](img/fantasy-stats.png)
+
+### Blog
+
+Public commissioner blog list and post detail pages for league updates and analysis.
+
+![Blog List](img/blog-list.png)
+
+![Blog Detail](img/blog-detail.png)
+
+### Super Admin Blog CMS
+
+Superuser-only blog management for creating, editing, publishing, drafting, and deleting league posts.
+
+![Super Admin Blog CMS](img/super-admin-blog.png)
+
 ### Interactive API Documentation
 
 [![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
