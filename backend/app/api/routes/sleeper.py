@@ -79,9 +79,10 @@ def _current_week(league_id: str) -> int:
         return 1
 
 
-def _handle_sleeper_error(exc: Exception) -> None:
+def _handle_sleeper_error(exc: Exception, league_id: str = "") -> None:
     if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404:
-        raise HTTPException(status_code=404, detail="League not found on Sleeper")
+        detail = f"League '{league_id}' not found on Sleeper" if league_id else "League not found on Sleeper"
+        raise HTTPException(status_code=404, detail=detail)
     raise HTTPException(status_code=502, detail=f"Sleeper API error: {exc}")
 
 
@@ -111,7 +112,7 @@ def get_league_info(
             "nfl_state": nfl_state,
         }
     except Exception as exc:
-        _handle_sleeper_error(exc)
+        _handle_sleeper_error(exc, lid)
 
 
 @router.get("/stats/{stat_key}")
@@ -139,4 +140,4 @@ def get_stat(
     except HTTPException:
         raise
     except Exception as exc:
-        _handle_sleeper_error(exc)
+        _handle_sleeper_error(exc, lid)

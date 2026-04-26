@@ -89,13 +89,9 @@ function BlogPostDetail() {
 
         <Separator />
 
-        <div
-          className="prose prose-sm dark:prose-invert max-w-none leading-relaxed"
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: blog content is authored by trusted super admin
-          dangerouslySetInnerHTML={{
-            __html: post.content.replace(/\n/g, "<br />"),
-          }}
-        />
+        <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed whitespace-pre-wrap">
+          {post.content}
+        </div>
       </article>
     </div>
   )
