@@ -106,10 +106,16 @@ uv run fastapi dev app/main.py
 ### Frontend
 
 ```bash
+cd frontend
 bun run lint
 bun run test
-cd frontend && bun run build
+bun run build
 ```
+
+`bun run test` runs the Playwright E2E suite. Start the required services first
+with `docker compose up -d --wait backend`, and make sure
+`FIRST_SUPERUSER` and `FIRST_SUPERUSER_PASSWORD` are set so the tests can log
+in successfully.
 
 ### Backend
 
