@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -105,6 +105,57 @@ class ItemPublic(ItemBase):
 
 class ItemsPublic(SQLModel):
     data: list[ItemPublic]
+    count: int
+
+
+# ---------------------------------------------------------------------------
+# Blog Post
+# ---------------------------------------------------------------------------
+
+class BlogPostBase(SQLModel):
+    title: str = Field(min_length=1, max_length=255)
+    slug: str = Field(min_length=1, max_length=255, unique=True, index=True)
+    content: str = Field(min_length=1, sa_type=Text())
+    excerpt: str | None = Field(default=None, max_length=500)
+    published: bool = Field(default=False)
+
+
+class BlogPostCreate(BlogPostBase):
+    pass
+
+
+class BlogPostUpdate(SQLModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    slug: str | None = Field(default=None, min_length=1, max_length=255)
+    content: str | None = Field(default=None, min_length=1)
+    excerpt: str | None = Field(default=None, max_length=500)
+    published: bool | None = None
+
+
+class BlogPost(BlogPostBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    author_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
+    author: User | None = Relationship()
+
+
+class BlogPostPublic(BlogPostBase):
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    author_id: uuid.UUID
+    author_name: str | None = None
+
+
+class BlogPostsPublic(SQLModel):
+    data: list[BlogPostPublic]
     count: int
 
 

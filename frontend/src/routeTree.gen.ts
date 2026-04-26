@@ -15,9 +15,13 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-admin'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
+import { Route as LayoutBlogRouteImport } from './routes/_layout/blog'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutBlogPostIdRouteImport } from './routes/_layout/blog.$postId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -48,6 +52,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSuperAdminRoute = LayoutSuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -58,21 +67,40 @@ const LayoutItemsRoute = LayoutItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutFantasyStatsRoute = LayoutFantasyStatsRouteImport.update({
+  id: '/fantasy-stats',
+  path: '/fantasy-stats',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutBlogRoute = LayoutBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutBlogPostIdRoute = LayoutBlogPostIdRouteImport.update({
+  id: '/$postId',
+  path: '/$postId',
+  getParentRoute: () => LayoutBlogRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/blog': typeof LayoutBlogRouteWithChildren
+  '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
+  '/super-admin': typeof LayoutSuperAdminRoute
+  '/blog/$postId': typeof LayoutBlogPostIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -80,9 +108,13 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/blog': typeof LayoutBlogRouteWithChildren
+  '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/super-admin': typeof LayoutSuperAdminRoute
   '/': typeof LayoutIndexRoute
+  '/blog/$postId': typeof LayoutBlogPostIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,21 +124,29 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/blog': typeof LayoutBlogRouteWithChildren
+  '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/super-admin': typeof LayoutSuperAdminRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/blog/$postId': typeof LayoutBlogPostIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/login'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/blog'
+    | '/fantasy-stats'
     | '/items'
     | '/settings'
-    | '/'
+    | '/super-admin'
+    | '/blog/$postId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -114,9 +154,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/blog'
+    | '/fantasy-stats'
     | '/items'
     | '/settings'
+    | '/super-admin'
     | '/'
+    | '/blog/$postId'
   id:
     | '__root__'
     | '/_layout'
@@ -125,9 +169,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_layout/admin'
+    | '/_layout/blog'
+    | '/_layout/fantasy-stats'
     | '/_layout/items'
     | '/_layout/settings'
+    | '/_layout/super-admin'
     | '/_layout/'
+    | '/_layout/blog/$postId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,7 +219,7 @@ declare module '@tanstack/react-router' {
     '/_layout': {
       id: '/_layout'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -180,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/super-admin': {
+      id: '/_layout/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof LayoutSuperAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -196,6 +251,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutItemsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/fantasy-stats': {
+      id: '/_layout/fantasy-stats'
+      path: '/fantasy-stats'
+      fullPath: '/fantasy-stats'
+      preLoaderRoute: typeof LayoutFantasyStatsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/blog': {
+      id: '/_layout/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof LayoutBlogRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/admin': {
       id: '/_layout/admin'
       path: '/admin'
@@ -203,20 +272,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/blog/$postId': {
+      id: '/_layout/blog/$postId'
+      path: '/$postId'
+      fullPath: '/blog/$postId'
+      preLoaderRoute: typeof LayoutBlogPostIdRouteImport
+      parentRoute: typeof LayoutBlogRoute
+    }
   }
 }
 
+interface LayoutBlogRouteChildren {
+  LayoutBlogPostIdRoute: typeof LayoutBlogPostIdRoute
+}
+
+const LayoutBlogRouteChildren: LayoutBlogRouteChildren = {
+  LayoutBlogPostIdRoute: LayoutBlogPostIdRoute,
+}
+
+const LayoutBlogRouteWithChildren = LayoutBlogRoute._addFileChildren(
+  LayoutBlogRouteChildren,
+)
+
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutBlogRoute: typeof LayoutBlogRouteWithChildren
+  LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutSuperAdminRoute: typeof LayoutSuperAdminRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutBlogRoute: LayoutBlogRouteWithChildren,
+  LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutSuperAdminRoute: LayoutSuperAdminRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 
