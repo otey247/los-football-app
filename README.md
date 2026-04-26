@@ -1,253 +1,133 @@
-# Full Stack FastAPI Template
+# Los Football
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Docker+Compose%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Docker%20Compose/badge.svg" alt="Test Docker Compose"></a>
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Backend%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Backend/badge.svg" alt="Test Backend"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+Los Football is a full-stack fantasy football web app built for commissioner workflows, league storytelling, and Sleeper-powered analytics.
 
-## Technology Stack and Features
+![Los Football preview](img/github-social-preview.png)
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 💃 Using TypeScript, hooks, [Vite](https://vitejs.dev), and other parts of a modern frontend stack.
-  - 🎨 [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-  - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- 📬 [Mailcatcher](https://mailcatcher.me) for local email testing during development.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+## What the app includes
 
-### Dashboard Login
+- Sleeper-powered fantasy football stat cards for power rankings, schedule luck, lineup optimization, waivers, draft analysis, trade analysis, playoff outlook, and weekly awards
+- A commissioner blog with public post list and detail pages
+- A super-admin blog CMS for drafting, publishing, editing, and deleting posts
+- Authenticated dashboards, user settings, admin tools, and interactive API docs
+- FastAPI backend, React frontend, PostgreSQL, Docker Compose, and Playwright end-to-end tests
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Screenshots
 
-### Dashboard - Admin
+### Login
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+![Login](img/login.png)
 
-### Dashboard - Items
+### Dashboard
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+![Dashboard](img/dashboard.png)
 
-### Dashboard - Dark Mode
+### Fantasy Stats
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Fantasy Football Stats
-
-Sleeper-powered fantasy football stat cards for league power rankings, schedule luck, lineup optimization, waiver ROI, draft ROI, trade value, playoff odds, and more.
+Top 25 advanced fantasy football stat cards powered by the Sleeper API.
 
 ![Fantasy Stats](img/fantasy-stats.png)
 
 ### Blog
 
-Public commissioner blog list and post detail pages for league updates and analysis.
+League news, analysis, and commissioner updates.
 
 ![Blog List](img/blog-list.png)
+
+### Blog Detail
 
 ![Blog Detail](img/blog-detail.png)
 
 ### Super Admin Blog CMS
 
-Superuser-only blog management for creating, editing, publishing, drafting, and deleting league posts.
+Create, edit, publish, draft, and delete commissioner posts.
 
 ![Super Admin Blog CMS](img/super-admin-blog.png)
 
-### Interactive API Documentation
+### Admin Workspace
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+![Admin Dashboard](img/dashboard-items.png)
 
-## How To Use It
+### Dark Mode
 
-You can **just fork or clone** this repository and use it as is.
+![Dark Mode Dashboard](img/dashboard-dark.png)
 
-✨ It just works. ✨
+### API Docs
 
-### How to Use a Private Repository
+![API Docs](img/docs.png)
 
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
+## Tech stack
 
-But you can do the following:
+- **Backend:** FastAPI, SQLModel, PostgreSQL, Alembic, Pydantic
+- **Frontend:** React, TypeScript, Vite, TanStack Router, TanStack Query, Tailwind CSS, shadcn/ui
+- **Integrations:** Sleeper fantasy football API
+- **Auth & security:** JWT auth, password recovery, secure password hashing
+- **Tooling:** Docker Compose, Playwright, Pytest, Biome, Ruff, MyPy
 
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+## Getting started
 
-```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
-```
+### Prerequisites
 
-- Enter into the new directory:
+- Docker and Docker Compose
+- Bun for local frontend commands
+- Python tooling with `uv` for local backend commands
 
-```bash
-cd my-full-stack
-```
-
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
-
-```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
-```
-
-- Add this repo as another "remote" to allow you to get updates later:
+### Run the full stack with Docker
 
 ```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
+docker compose up --build
 ```
 
-- Push the code to your new repository:
+After startup, the main services are available at:
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+- MailCatcher: `http://localhost:1080`
+
+### Local frontend development
 
 ```bash
-git push -u origin master
+cd frontend
+bun install
+bun run dev
 ```
 
-### Update From the Original Template
-
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
+### Local backend development
 
 ```bash
-git remote -v
-
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
+cd backend
+uv sync
+uv run fastapi dev app/main.py
 ```
 
-- Pull the latest changes without merging:
+## Useful commands
+
+### Frontend
 
 ```bash
-git pull --no-commit upstream master
+bun run lint
+bun run test
+cd frontend && bun run build
 ```
 
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
-
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
+### Backend
 
 ```bash
-git merge --continue
+cd backend
+uv run pytest
+uv run ruff check
+uv run mypy .
 ```
 
-### Configure
+## Project documentation
 
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
-
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
-
-```bash
-pip install copier
-```
-
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
-
-```bash
-pipx install copier
-```
-
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
-
-### Generate a Project With Copier
-
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
-
-Go to the directory that will be the parent of your project, and run the command with your project's name:
-
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
+- Backend setup: [backend/README.md](./backend/README.md)
+- Frontend setup: [frontend/README.md](./frontend/README.md)
+- Development notes: [development.md](./development.md)
+- Deployment: [deployment.md](./deployment.md)
+- Release notes: [release-notes.md](./release-notes.md)
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+This project is licensed under the terms of the MIT license.
