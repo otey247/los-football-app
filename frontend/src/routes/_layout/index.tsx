@@ -26,7 +26,7 @@ function Dashboard() {
           Hi, {currentUser?.full_name || currentUser?.email}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Welcome back to your Los Football analytics workspace.
+          Welcome back to your LOS Football analytics workspace.
         </p>
       </div>
     </div>
