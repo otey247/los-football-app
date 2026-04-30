@@ -244,7 +244,7 @@ function FantasyStats() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <div className="flex gap-2 items-end">
+          <div className="flex gap-2 items-end">
             <div className="flex-1">
               <Label htmlFor="league-id" className="text-xs mb-1 block">
                 Sleeper League ID
@@ -263,17 +263,17 @@ function FantasyStats() {
             </Button>
           </div>
           {leagueId && (
-             <p className="mt-3 text-xs font-medium text-muted-foreground">
-               League ID set:{" "}
-               <code className="font-mono text-foreground">{leagueId}</code>
-             </p>
-           )}
-           {!leagueId && (
-             <p className="mt-3 text-xs font-medium text-muted-foreground">
-               Enter a league ID above then click "Load League" to expand any
-               stat card
-             </p>
-           )}
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
+              League ID set:{" "}
+              <code className="font-mono text-foreground">{leagueId}</code>
+            </p>
+          )}
+          {!leagueId && (
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
+              Enter a league ID above then click "Load League" to expand any
+              stat card
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -117,9 +117,21 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(circle at 18% -12%, color-mix(in oklch, var(--primary) 22%, transparent) 0, transparent 30rem),
-      radial-gradient(circle at 92% 8%, color-mix(in oklch, var(--chart-2) 14%, transparent) 0, transparent 28rem),
-      linear-gradient(180deg, color-mix(in oklch, var(--background) 92%, black) 0%, var(--background) 42%);
+      radial-gradient(
+        circle at 18% -12%,
+        color-mix(in oklch, var(--primary) 22%, transparent) 0,
+        transparent 30rem
+      ),
+      radial-gradient(
+        circle at 92% 8%,
+        color-mix(in oklch, var(--chart-2) 14%, transparent) 0,
+        transparent 28rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklch, var(--background) 92%, black) 0%,
+        var(--background) 42%
+      );
     font-feature-settings:
       "rlig" 1,
       "calt" 1,
