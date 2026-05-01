@@ -71,5 +71,9 @@ export function Logo({
     return content
   }
 
-  return <Link to="/">{content}</Link>
+  return (
+    <Link to="/" aria-label="LOS Football">
+      {content}
+    </Link>
+  )
 }
