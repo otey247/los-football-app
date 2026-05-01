@@ -37,25 +37,6 @@ export const Route = createFileRoute("/_layout/fantasy-stats")({
   }),
 })
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "Power Rankings":
-    "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  "Schedule Luck":
-    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  "Lineup Optimization":
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  "Weekly Awards":
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  Waivers:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  "Draft Analysis":
-    "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-  "Trade Analysis":
-    "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
-  Playoff:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-}
-
 interface StatRowProps {
   row: Record<string, unknown>
   index: number
@@ -77,9 +58,9 @@ function StatRow({ row, index }: StatRowProps) {
   )
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+    <div className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/65">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-sm font-bold text-muted-foreground w-6 shrink-0">
+        <span className="w-6 shrink-0 text-sm font-black tabular-nums text-muted-foreground">
           {index + 1}
         </span>
         <div className="flex items-center gap-2 min-w-0">
@@ -87,23 +68,23 @@ function StatRow({ row, index }: StatRowProps) {
             <img
               src={`https://sleepercdn.com/avatars/thumbs/${avatar}`}
               alt={displayName}
-              className="w-8 h-8 rounded-full shrink-0"
+              className="h-8 w-8 shrink-0 rounded-full ring-1 ring-border/80"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border/80">
               <Trophy className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
-          <span className="font-medium truncate">{displayName}</span>
+          <span className="truncate font-semibold">{displayName}</span>
         </div>
       </div>
       <div className="flex gap-4 shrink-0 ml-4">
         {numericFields.slice(0, 3).map(([key, value]) => (
           <div key={key} className="text-right">
-            <p className="text-xs text-muted-foreground capitalize">
+            <p className="text-xs font-semibold capitalize text-muted-foreground">
               {key.replace(/_/g, " ")}
             </p>
-            <p className="text-sm font-semibold">
+            <p className="text-sm font-black tabular-nums">
               {typeof value === "number"
                 ? Number.isInteger(value)
                   ? value
@@ -133,21 +114,17 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
     retry: false,
   })
 
-  const categoryColor =
-    CATEGORY_COLORS[meta.category] ??
-    "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <Badge className={`text-xs ${categoryColor} border-0`}>
+              <Badge variant="secondary" className="text-[11px] uppercase">
                 {meta.category}
               </Badge>
             </div>
-            <CardTitle className="text-base">{meta.title}</CardTitle>
+            <CardTitle className="text-base font-black">{meta.title}</CardTitle>
             <CardDescription className="text-xs mt-1">
               {meta.description}
             </CardDescription>
@@ -176,13 +153,13 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
             </div>
           )}
           {isError && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-              <Info className="h-4 w-4 shrink-0" />
+            <div className="flex items-center gap-2 rounded-md bg-secondary/70 p-3 text-sm text-foreground">
+              <Info className="h-4 w-4 shrink-0 text-destructive" />
               <span>{(error as Error)?.message ?? "Failed to load stat"}</span>
             </div>
           )}
           {data && Array.isArray(data) && data.length > 0 && (
-            <div className="divide-y">
+            <div className="divide-y divide-border/60">
               {(data as Record<string, unknown>[])
                 .slice(0, 12)
                 .map((row, i) => (
@@ -240,10 +217,13 @@ function FantasyStats() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap rounded-2xl border border-border/70 bg-card/75 p-6 shadow-[0_24px_80px_-52px_rgb(0_0_0/0.9)]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-6 w-6" />
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Analytics Suite
+          </p>
+          <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
+            <BarChart3 className="h-7 w-7 text-primary" />
             Fantasy Stats
           </h1>
           <p className="text-muted-foreground">
@@ -255,7 +235,7 @@ function FantasyStats() {
       {/* League ID configuration */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
             League Configuration
           </CardTitle>
           <CardDescription className="text-xs">
@@ -283,13 +263,14 @@ function FantasyStats() {
             </Button>
           </div>
           {leagueId && (
-            <p className="text-xs text-muted-foreground mt-2">
-              ✓ League ID set: <code className="font-mono">{leagueId}</code>
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
+              League ID set:{" "}
+              <code className="font-mono text-foreground">{leagueId}</code>
             </p>
           )}
           {!leagueId && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-              ⚠ Enter a league ID above then click "Load League" to expand any
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
+              Enter a league ID above then click "Load League" to expand any
               stat card
             </p>
           )}
@@ -297,8 +278,10 @@ function FantasyStats() {
       </Card>
 
       {/* Category filter */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Label className="text-sm font-medium">Filter by category:</Label>
+      <div className="flex items-center gap-3 flex-wrap rounded-xl border border-border/70 bg-card/60 p-3">
+        <Label className="text-sm font-bold text-muted-foreground">
+          Filter by category:
+        </Label>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="w-48 h-8 text-sm">
             <SelectValue />
@@ -312,7 +295,7 @@ function FantasyStats() {
           </SelectContent>
         </Select>
         {filteredStats && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             {filteredStats.length} stat{filteredStats.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -326,7 +309,7 @@ function FantasyStats() {
       ) : metaError ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-            <Info className="h-8 w-8 text-muted-foreground" />
+            <Info className="h-8 w-8 text-destructive" />
             <div>
               <p className="font-medium">Unable to load fantasy stat cards</p>
               <p className="text-sm text-muted-foreground">

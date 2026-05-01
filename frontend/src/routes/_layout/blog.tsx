@@ -86,7 +86,7 @@ function BlogDetail({ postId }: { postId: string }) {
             )}
           </div>
           {post.excerpt && (
-            <p className="mt-3 text-muted-foreground italic border-l-4 border-primary pl-4">
+            <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-muted-foreground">
               {post.excerpt}
             </p>
           )}
@@ -160,7 +160,7 @@ function BlogList() {
               params={{ postId: post.id }}
               className="no-underline"
             >
-              <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group">
+              <Card className="h-full cursor-pointer transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card group">
                 <CardHeader>
                   <CardTitle className="group-hover:text-primary transition-colors line-clamp-2">
                     {post.title}
