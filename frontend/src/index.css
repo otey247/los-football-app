@@ -142,3 +142,46 @@
     cursor: pointer;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Smooth dark/light theme transitions                                 */
+/* The `theme-transition` class is added to <html> only for the brief  */
+/* window around a theme switch (see theme-provider.tsx), so normal     */
+/* hover/focus interactions stay snappy.                                */
+/* ------------------------------------------------------------------ */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    color 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease,
+    box-shadow 300ms ease;
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Density: compact mode tightens data-heavy tables app-wide.          */
+/* Components that need JS awareness read PreferencesContext; tables    */
+/* opt in automatically via the data attribute on <html>.              */
+/* ------------------------------------------------------------------ */
+[data-density="compact"] [data-slot="table-cell"] {
+  padding-top: calc(var(--spacing) * 1.5);
+  padding-bottom: calc(var(--spacing) * 1.5);
+}
+
+[data-density="compact"] [data-slot="table-head"] {
+  height: calc(var(--spacing) * 8);
+}

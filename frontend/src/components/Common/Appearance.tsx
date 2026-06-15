@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react"
+import { Check, Monitor, Moon, Sun } from "lucide-react"
 
 import { type Theme, useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 type LucideIcon = React.FC<React.SVGProps<SVGSVGElement>>
 
@@ -21,6 +22,12 @@ const ICON_MAP: Record<Theme, LucideIcon> = {
   light: Sun,
   dark: Moon,
 }
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: LucideIcon }[] = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+]
 
 export const SidebarAppearance = () => {
   const { isMobile } = useSidebar()
@@ -42,24 +49,22 @@ export const SidebarAppearance = () => {
           align="end"
           className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
         >
-          <DropdownMenuItem
-            data-testid="light-mode"
-            onClick={() => setTheme("light")}
-          >
-            <Sun className="mr-2 h-4 w-4" />
-            Light
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            data-testid="dark-mode"
-            onClick={() => setTheme("dark")}
-          >
-            <Moon className="mr-2 h-4 w-4" />
-            Dark
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
-            System
-          </DropdownMenuItem>
+          {THEME_OPTIONS.map(({ value, label, icon: OptionIcon }) => (
+            <DropdownMenuItem
+              key={value}
+              data-testid={`${value}-mode`}
+              onClick={() => setTheme(value)}
+            >
+              <OptionIcon className="mr-2 h-4 w-4" />
+              {label}
+              <Check
+                className={cn(
+                  "ml-auto h-4 w-4 text-primary",
+                  theme === value ? "opacity-100" : "opacity-0",
+                )}
+              />
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
@@ -67,7 +72,7 @@ export const SidebarAppearance = () => {
 }
 
 export const Appearance = () => {
-  const { setTheme } = useTheme()
+  const { setTheme, theme } = useTheme()
 
   return (
     <div className="flex items-center justify-center">
@@ -80,24 +85,22 @@ export const Appearance = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            data-testid="light-mode"
-            onClick={() => setTheme("light")}
-          >
-            <Sun className="mr-2 h-4 w-4" />
-            Light
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            data-testid="dark-mode"
-            onClick={() => setTheme("dark")}
-          >
-            <Moon className="mr-2 h-4 w-4" />
-            Dark
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
-            System
-          </DropdownMenuItem>
+          {THEME_OPTIONS.map(({ value, label, icon: OptionIcon }) => (
+            <DropdownMenuItem
+              key={value}
+              data-testid={`${value}-mode`}
+              onClick={() => setTheme(value)}
+            >
+              <OptionIcon className="mr-2 h-4 w-4" />
+              {label}
+              <Check
+                className={cn(
+                  "ml-auto h-4 w-4 text-primary",
+                  theme === value ? "opacity-100" : "opacity-0",
+                )}
+              />
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

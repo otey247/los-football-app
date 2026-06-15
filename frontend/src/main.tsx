@@ -11,6 +11,7 @@ import { ApiError, OpenAPI } from "./client"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import { LeagueProvider } from "./contexts/LeagueContext"
+import { PreferencesProvider } from "./contexts/PreferencesContext"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
@@ -44,12 +45,14 @@ declare module "@tanstack/react-router" {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <LeagueProvider>
-          <RouterProvider router={router} />
-        </LeagueProvider>
-        <Toaster richColors closeButton />
-      </QueryClientProvider>
+      <PreferencesProvider>
+        <QueryClientProvider client={queryClient}>
+          <LeagueProvider>
+            <RouterProvider router={router} />
+          </LeagueProvider>
+          <Toaster richColors closeButton />
+        </QueryClientProvider>
+      </PreferencesProvider>
     </ThemeProvider>
   </StrictMode>,
 )
