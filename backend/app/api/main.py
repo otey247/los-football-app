@@ -7,6 +7,7 @@ from app.api.routes import (
     login,
     player_analytics,
     private,
+    recommendations,
     sleeper,
     users,
     utils,
@@ -22,6 +23,7 @@ api_router.include_router(blog.router)
 api_router.include_router(sleeper.router)
 api_router.include_router(player_analytics.router)
 api_router.include_router(insights.router)
+api_router.include_router(recommendations.router)
 
 
 if settings.ENVIRONMENT == "local":

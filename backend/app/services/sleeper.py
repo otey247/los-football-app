@@ -108,6 +108,22 @@ def get_nfl_state() -> dict[str, Any]:
     return _get(f"{SLEEPER_BASE_URL}/state/nfl", ttl=60)
 
 
+def get_trending_players(
+    add_drop: str = "add", lookback_hours: int = 24, limit: int = 50
+) -> list[dict[str, Any]]:
+    """Players ranked by add/drop activity over the lookback window.
+
+    Returns ``[{"player_id": str, "count": int}, ...]``. ``count`` is market
+    activity (how many leagues added/dropped the player), **not** a projection.
+    """
+    kind = "add" if add_drop not in ("add", "drop") else add_drop
+    return _get(
+        f"{SLEEPER_BASE_URL}/players/nfl/trending/{kind}"
+        f"?lookback_hours={lookback_hours}&limit={limit}",
+        ttl=_DEFAULT_TTL,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Helper builders
 # ---------------------------------------------------------------------------
