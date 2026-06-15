@@ -23,13 +23,13 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [x] 8. Add deep-linkable URLs for every stat card + week + league combination for easy sharing
 
 ### 1.2 Visual Design & Theming
-- [ ] 9. Add team-color theming that adapts card accents to each franchise's primary color
-- [ ] 10. Build a polished dark/light/system theme toggle with smooth transitions
-- [ ] 11. Add team avatar/logo upload and display throughout standings and matchup views
-- [ ] 12. Create animated number counters for points, ranks, and win probabilities
-- [ ] 13. Add skeleton loaders for every stat card while Sleeper data is fetched
-- [ ] 14. Design empty-state illustrations for pre-season / no-data scenarios
-- [ ] 15. Add a "compact" vs "comfortable" density toggle for data-heavy tables
+- [x] 9. Add team-color theming that adapts card accents to each franchise's primary color
+- [x] 10. Build a polished dark/light/system theme toggle with smooth transitions
+- [x] 11. Add team avatar/logo upload and display throughout standings and matchup views
+- [x] 12. Create animated number counters for points, ranks, and win probabilities
+- [x] 13. Add skeleton loaders for every stat card while Sleeper data is fetched
+- [x] 14. Design empty-state illustrations for pre-season / no-data scenarios
+- [x] 15. Add a "compact" vs "comfortable" density toggle for data-heavy tables
 
 ### 1.3 Interactivity & Engagement
 - [ ] 16. Add interactive, hoverable charts (tooltips, crosshairs, legend toggling)

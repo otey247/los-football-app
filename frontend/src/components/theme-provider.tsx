@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react"
 
@@ -51,8 +52,20 @@ export function ThemeProvider({
     getResolvedTheme(theme),
   )
 
-  const updateTheme = useCallback((newTheme: Theme) => {
+  const updateTheme = useCallback((newTheme: Theme, animate = false) => {
     const root = window.document.documentElement
+
+    // Briefly enable cross-property color transitions so the switch eases
+    // between palettes instead of snapping. Skipped for users who request
+    // reduced motion (handled by the CSS media query) and on initial mount.
+    let cleanup: number | undefined
+    if (animate) {
+      root.classList.add("theme-transition")
+      cleanup = window.setTimeout(
+        () => root.classList.remove("theme-transition"),
+        320,
+      )
+    }
 
     root.classList.remove("light", "dark")
 
@@ -63,21 +76,26 @@ export function ThemeProvider({
         : "light"
 
       root.classList.add(systemTheme)
-      return
+    } else {
+      root.classList.add(newTheme)
     }
 
-    root.classList.add(newTheme)
+    return cleanup
   }, [])
 
+  // Skip the transition on the very first paint so the app doesn't flash.
+  const mountedRef = useRef(false)
+
   useEffect(() => {
-    updateTheme(theme)
+    const cleanup = updateTheme(theme, mountedRef.current)
     setResolvedTheme(getResolvedTheme(theme))
+    mountedRef.current = true
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
     const handleChange = () => {
       if (theme === "system") {
-        updateTheme("system")
+        updateTheme("system", true)
         setResolvedTheme(getResolvedTheme("system"))
       }
     }
@@ -86,6 +104,7 @@ export function ThemeProvider({
 
     return () => {
       mediaQuery.removeEventListener("change", handleChange)
+      if (cleanup) window.clearTimeout(cleanup)
     }
   }, [theme, updateTheme, getResolvedTheme])
 

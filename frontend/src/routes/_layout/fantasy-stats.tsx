@@ -1,18 +1,17 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  BarChart3,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  Link2,
-  Loader2,
-  Star,
-  Trophy,
-} from "lucide-react"
+import { BarChart3, ChevronDown, ChevronUp, Link2, Star } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { AnimatedNumber } from "@/components/Common/AnimatedNumber"
+import { DensityToggle } from "@/components/Common/DensityToggle"
+import { EmptyState } from "@/components/Common/EmptyState"
+import {
+  StatCardSkeleton,
+  StatRowsSkeleton,
+} from "@/components/Common/StatCardSkeleton"
+import { TeamAvatar } from "@/components/Common/TeamAvatar"
 import { WeekSelector } from "@/components/Common/WeekSelector"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,7 +32,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useLeague } from "@/contexts/LeagueContext"
+import { usePreferences } from "@/contexts/PreferencesContext"
 import { SleeperService, type SleeperStatMeta } from "@/lib/footballApi"
+import { teamColorFromSeed } from "@/lib/teamColor"
 import { cn } from "@/lib/utils"
 
 interface FantasySearch {
@@ -64,9 +65,20 @@ interface StatRowProps {
   index: number
 }
 
+/** Percentage-style fields render with a `%` suffix. */
+function isPercentField(key: string): boolean {
+  return /(pct|percent|probability|odds|efficiency)/.test(key)
+}
+
 function StatRow({ row, index }: StatRowProps) {
+  const { density } = usePreferences()
+  const compact = density === "compact"
   const displayName = (row.display_name as string) ?? `Team ${row.roster_id}`
   const avatar = row.avatar as string | null
+  // Stable per-franchise accent color (item 9).
+  const tc = teamColorFromSeed(
+    (row.roster_id as string | number) ?? displayName,
+  )
 
   const numericFields = Object.entries(row).filter(
     ([k, v]) =>
@@ -80,38 +92,51 @@ function StatRow({ row, index }: StatRowProps) {
   )
 
   return (
-    <div className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/65">
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="w-6 shrink-0 text-sm font-black tabular-nums text-muted-foreground">
+    <div
+      className={cn(
+        "group/row relative flex items-center justify-between rounded-lg pr-3 transition-colors hover:bg-accent/65",
+        compact ? "py-1.5 pl-4" : "py-2.5 pl-4",
+      )}
+    >
+      {/* Team-color accent bar */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-1.5 left-1 w-1 rounded-full opacity-70 transition-opacity group-hover/row:opacity-100"
+        style={{ backgroundColor: tc.color }}
+      />
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className={cn(
+            "grid shrink-0 place-items-center rounded-md text-xs font-black tabular-nums",
+            compact ? "h-6 w-6" : "h-7 w-7",
+          )}
+          style={{ backgroundColor: tc.soft, color: tc.color }}
+        >
           {index + 1}
         </span>
-        <div className="flex items-center gap-2 min-w-0">
-          {avatar ? (
-            <img
-              src={`https://sleepercdn.com/avatars/thumbs/${avatar}`}
-              alt={displayName}
-              className="h-8 w-8 shrink-0 rounded-full ring-1 ring-border/80"
-            />
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border/80">
-              <Trophy className="w-4 h-4 text-muted-foreground" />
-            </div>
-          )}
+        <div className="flex min-w-0 items-center gap-2">
+          <TeamAvatar
+            avatar={avatar}
+            name={displayName}
+            seed={(row.roster_id as string | number) ?? displayName}
+            className={compact ? "h-7 w-7" : "h-8 w-8"}
+          />
           <span className="truncate font-semibold">{displayName}</span>
         </div>
       </div>
-      <div className="flex gap-4 shrink-0 ml-4">
+      <div
+        className={cn("flex shrink-0", compact ? "ml-3 gap-3" : "ml-4 gap-4")}
+      >
         {numericFields.slice(0, 3).map(([key, value]) => (
           <div key={key} className="text-right">
             <p className="text-xs font-semibold capitalize text-muted-foreground">
               {key.replace(/_/g, " ")}
             </p>
-            <p className="text-sm font-black tabular-nums">
-              {typeof value === "number"
-                ? Number.isInteger(value)
-                  ? value
-                  : value.toFixed(2)
-                : String(value)}
+            <p className="text-sm font-black">
+              <AnimatedNumber
+                value={value as number}
+                suffix={isPercentField(key) ? "%" : ""}
+              />
             </p>
           </div>
         ))}
@@ -218,16 +243,17 @@ function StatCard({
 
       {expanded && (
         <CardContent className="pt-0">
-          {isLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
+          {isLoading && <StatRowsSkeleton rows={6} />}
           {isError && (
-            <div className="flex items-center gap-2 rounded-md bg-secondary/70 p-3 text-sm text-foreground">
-              <Info className="h-4 w-4 shrink-0 text-destructive" />
-              <span>{(error as Error)?.message ?? "Failed to load stat"}</span>
-            </div>
+            <EmptyState
+              illustration="error"
+              className="py-6"
+              title="Couldn't load this stat"
+              description={
+                (error as Error)?.message ??
+                "Something went wrong fetching Sleeper data."
+              }
+            />
           )}
           {data && Array.isArray(data) && data.length > 0 && (
             <div className="divide-y divide-border/60">
@@ -243,9 +269,12 @@ function StatCard({
             </div>
           )}
           {data && Array.isArray(data) && data.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No data available yet
-            </p>
+            <EmptyState
+              illustration="preseason"
+              className="py-6"
+              title="No data yet"
+              description="This stat will populate once games are played for the selected week."
+            />
           )}
         </CardContent>
       )}
@@ -453,26 +482,45 @@ function FantasyStats() {
             {filteredStats.length} stat{filteredStats.length !== 1 ? "s" : ""}
           </span>
         )}
+        <div className="ml-auto">
+          <DensityToggle />
+        </div>
       </div>
 
       {/* Stats grid */}
       {metaLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <StatCardSkeleton key={`stat-card-skeleton-${i}`} />
+          ))}
         </div>
       ) : metaError ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-            <Info className="h-8 w-8 text-destructive" />
-            <div>
-              <p className="font-medium">Unable to load fantasy stat cards</p>
-              <p className="text-sm text-muted-foreground">
-                Check that the backend is running and try again.
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => refetchMeta()}>
-              Retry
-            </Button>
+          <CardContent className="py-6">
+            <EmptyState
+              illustration="error"
+              title="Unable to load fantasy stat cards"
+              description="Check that the backend is running and try again."
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchMeta()}
+                >
+                  Retry
+                </Button>
+              }
+            />
+          </CardContent>
+        </Card>
+      ) : filteredStats && filteredStats.length === 0 ? (
+        <Card>
+          <CardContent className="py-6">
+            <EmptyState
+              illustration="search"
+              title="No stats in this category"
+              description="Try a different category to see more stat cards."
+            />
           </CardContent>
         </Card>
       ) : (
