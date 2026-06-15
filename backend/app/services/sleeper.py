@@ -624,6 +624,17 @@ def _collect_all_transactions(league_id: str, current_week: int) -> list[dict[st
     return txns
 
 
+def _player_week_points(
+    tw: list[dict[str, Any]],
+) -> dict[str, dict[int, float]]:
+    """Build {player_id: {week: points}} from the team-week fact table."""
+    player_week_pts: dict[str, dict[int, float]] = {}
+    for row in tw:
+        for pid, pts in row["players_points"].items():
+            player_week_pts.setdefault(pid, {})[row["week"]] = float(pts)
+    return player_week_pts
+
+
 def stat_waiver_roi(
     league_id: str, current_week: int
 ) -> list[dict[str, Any]]:
@@ -1388,4 +1399,515 @@ def stat_dynasty_legacy_score(
             "avatar": user.get("avatar"),
         })
     result.sort(key=lambda x: x["legacy_score"], reverse=True)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 2.4 Transactions: Waivers, Trades & Draft (TODO items 67–74)
+# ---------------------------------------------------------------------------
+
+
+def _draft_expected_points(pick_no: int, n_teams: int) -> float:
+    """Expected season points for a draft slot (linear decay from pick #1)."""
+    return max(0.0, 300 - (pick_no - 1) * (250 / max(n_teams * 15, 1)))
+
+
+def stat_waiver_spend_efficiency(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#67 Waiver Spend Efficiency – FAAB spent vs fantasy points gained."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    txns = _collect_all_transactions(league_id, current_week)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    player_week_pts = _player_week_points(tw)
+
+    spent: dict[int, float] = {r["roster_id"]: 0.0 for r in rosters}
+    points: dict[int, float] = {r["roster_id"]: 0.0 for r in rosters}
+    claims: dict[int, int] = {r["roster_id"]: 0 for r in rosters}
+
+    for txn in txns:
+        if txn.get("type") not in ("free_agent", "waiver"):
+            continue
+        if txn.get("status") not in (None, "complete"):
+            continue
+        settings = txn.get("settings") or {}
+        bid = float(settings.get("waiver_bid", 0) or 0)
+        week_added = txn.get("leg", 1) or 1
+        for pid, rid in (txn.get("adds") or {}).items():
+            spent[rid] = spent.get(rid, 0.0) + bid
+            claims[rid] = claims.get(rid, 0) + 1
+            points[rid] = points.get(rid, 0.0) + sum(
+                pts
+                for w, pts in player_week_pts.get(pid, {}).items()
+                if w >= week_added
+            )
+
+    result = []
+    for rid in spent:
+        user = rum.get(rid, {})
+        dollars = spent[rid]
+        pts = points[rid]
+        result.append({
+            "roster_id": rid,
+            "faab_spent": round(dollars, 2),
+            "points_gained": round(pts, 2),
+            "points_per_dollar": round(pts / dollars, 2) if dollars > 0 else None,
+            "claims": claims[rid],
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: (x["points_per_dollar"] or 0), reverse=True)
+    return result
+
+
+def stat_waiver_pickup_leaderboard(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#68 Best/Worst Waiver Pickups – season leaderboard of individual adds."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    txns = _collect_all_transactions(league_id, current_week)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    nfl_players = get_nfl_players()
+    player_week_pts = _player_week_points(tw)
+
+    pickups: list[dict[str, Any]] = []
+    for txn in txns:
+        if txn.get("type") not in ("free_agent", "waiver"):
+            continue
+        if txn.get("status") not in (None, "complete"):
+            continue
+        settings = txn.get("settings") or {}
+        bid = float(settings.get("waiver_bid", 0) or 0)
+        week_added = txn.get("leg", 1) or 1
+        for pid, rid in (txn.get("adds") or {}).items():
+            future_pts = sum(
+                pts
+                for w, pts in player_week_pts.get(pid, {}).items()
+                if w >= week_added
+            )
+            info = nfl_players.get(pid, {})
+            user = rum.get(rid, {})
+            pickups.append({
+                "roster_id": rid,
+                "player_id": pid,
+                "player_name": info.get("full_name", f"Player {pid}"),
+                "position": info.get("position"),
+                "week_added": week_added,
+                "faab_bid": round(bid, 2),
+                "points_gained": round(future_pts, 2),
+                "display_name": user.get("display_name", f"Team {rid}"),
+                "avatar": user.get("avatar"),
+            })
+
+    pickups.sort(key=lambda x: x["points_gained"], reverse=True)
+    # Tag rank so best (1..) and worst (negative) are both legible in exports.
+    for i, row in enumerate(pickups):
+        row["overall_rank"] = i + 1
+    return pickups
+
+
+def stat_trade_fairness(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """
+    #69 Trade Fairness Evaluator – balances each completed trade by the
+    rest-of-season points the exchanged assets actually produced.
+
+    Sleeper exposes no projections, so realized rest-of-season production is the
+    fairness proxy. A trade is "fair" when both sides received similar value.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    txns = _collect_all_transactions(league_id, current_week)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    player_week_pts = _player_week_points(tw)
+
+    trades: list[dict[str, Any]] = []
+    for txn in txns:
+        if txn.get("type") != "trade":
+            continue
+        if txn.get("status") not in (None, "complete"):
+            continue
+        week_trade = txn.get("leg", 1) or 1
+        received: dict[int, float] = {}
+        for pid, rid in (txn.get("adds") or {}).items():
+            received[rid] = received.get(rid, 0.0) + sum(
+                p for w, p in player_week_pts.get(pid, {}).items() if w > week_trade
+            )
+        roster_ids = list(received.keys())
+        if len(roster_ids) != 2:
+            continue
+        a, b = roster_ids
+        va, vb = received[a], received[b]
+        total = va + vb
+        # Fairness: 100 when even, → 0 as one side captures all the value.
+        fairness = round((1 - abs(va - vb) / total) * 100, 1) if total > 0 else 100.0
+        ua = rum.get(a, {})
+        ub = rum.get(b, {})
+        winner = ua if va >= vb else ub
+        trades.append({
+            "week": week_trade,
+            "roster_id": a,
+            "team_a": ua.get("display_name", f"Team {a}"),
+            "team_b": ub.get("display_name", f"Team {b}"),
+            "team_a_value": round(va, 2),
+            "team_b_value": round(vb, 2),
+            "value_gap": round(abs(va - vb), 2),
+            "fairness_pct": fairness,
+            "winner": winner.get("display_name", "—"),
+            "display_name": (
+                f"{ua.get('display_name', f'Team {a}')} ↔ "
+                f"{ub.get('display_name', f'Team {b}')}"
+            ),
+            "avatar": ua.get("avatar"),
+        })
+
+    # Least fair (largest gap) first – those are the interesting ones.
+    trades.sort(key=lambda x: x["value_gap"], reverse=True)
+    return trades
+
+
+def stat_trade_impact_tracker(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """
+    #70 Trade Impact Tracker – how a completed trade has aged for both sides
+    (net rest-of-season points received minus sent), with a clear winner.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    txns = _collect_all_transactions(league_id, current_week)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    player_week_pts = _player_week_points(tw)
+
+    trades: list[dict[str, Any]] = []
+    for txn in txns:
+        if txn.get("type") != "trade":
+            continue
+        if txn.get("status") not in (None, "complete"):
+            continue
+        week_trade = txn.get("leg", 1) or 1
+        sides: dict[int, dict[str, float]] = {}
+        for pid, rid in (txn.get("adds") or {}).items():
+            sides.setdefault(rid, {"received": 0.0, "sent": 0.0})["received"] += sum(
+                p for w, p in player_week_pts.get(pid, {}).items() if w > week_trade
+            )
+        for pid, rid in (txn.get("drops") or {}).items():
+            sides.setdefault(rid, {"received": 0.0, "sent": 0.0})["sent"] += sum(
+                p for w, p in player_week_pts.get(pid, {}).items() if w > week_trade
+            )
+        if len(sides) != 2:
+            continue
+        a, b = sides.keys()
+        net_a = sides[a]["received"] - sides[a]["sent"]
+        net_b = sides[b]["received"] - sides[b]["sent"]
+        ua = rum.get(a, {})
+        ub = rum.get(b, {})
+        winner_rid = a if net_a >= net_b else b
+        winner = rum.get(winner_rid, {})
+        trades.append({
+            "week": week_trade,
+            "roster_id": winner_rid,
+            "team_a": ua.get("display_name", f"Team {a}"),
+            "team_a_net": round(net_a, 2),
+            "team_b": ub.get("display_name", f"Team {b}"),
+            "team_b_net": round(net_b, 2),
+            "margin": round(abs(net_a - net_b), 2),
+            "winner": winner.get("display_name", "—"),
+            "display_name": (
+                f"W{week_trade}: {winner.get('display_name', f'Team {winner_rid}')} won"
+            ),
+            "avatar": winner.get("avatar"),
+        })
+
+    trades.sort(key=lambda x: x["margin"], reverse=True)
+    return trades
+
+
+def _draft_pick_table(
+    league_id: str, tw: list[dict[str, Any]], n_teams: int
+) -> list[dict[str, Any]]:
+    """Shared draft-pick fact rows: player, slot, points, expected, surplus."""
+    drafts = get_drafts(league_id)
+    if not drafts:
+        return []
+    picks = get_draft_picks(drafts[0]["draft_id"])
+    nfl_players = get_nfl_players()
+    player_week_pts = _player_week_points(tw)
+
+    rows: list[dict[str, Any]] = []
+    for pick in picks:
+        pid = pick.get("player_id")
+        if not pid:
+            continue
+        pick_no = int(pick.get("pick_no", 1))
+        rnd = int(pick.get("round", 1))
+        roster_id = int(pick.get("roster_id", 0))
+        total_pts = sum(player_week_pts.get(pid, {}).values())
+        expected = _draft_expected_points(pick_no, n_teams)
+        info = nfl_players.get(pid, {})
+        meta = pick.get("metadata") or {}
+        rows.append({
+            "roster_id": roster_id,
+            "player_id": pid,
+            "player_name": info.get("full_name")
+            or f"{meta.get('first_name', '')} {meta.get('last_name', '')}".strip()
+            or f"Player {pid}",
+            "position": info.get("position") or meta.get("position"),
+            "round": rnd,
+            "pick_no": pick_no,
+            "total_points": round(total_pts, 2),
+            "expected_points": round(expected, 2),
+            "surplus": round(total_pts - expected, 2),
+        })
+    return rows
+
+
+def _letter_grade(avg_surplus: float) -> str:
+    if avg_surplus >= 40:
+        return "A"
+    if avg_surplus >= 15:
+        return "B"
+    if avg_surplus >= -15:
+        return "C"
+    if avg_surplus >= -40:
+        return "D"
+    return "F"
+
+
+def stat_draft_grade(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#71 Draft Grade – drafted production vs draft-slot value, graded by team."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    pick_rows = _draft_pick_table(league_id, tw, len(rosters))
+    if not pick_rows:
+        return []
+
+    by_roster: dict[int, list[dict[str, Any]]] = {}
+    for row in pick_rows:
+        by_roster.setdefault(row["roster_id"], []).append(row)
+
+    result = []
+    for rid, picks in by_roster.items():
+        user = rum.get(rid, {})
+        total_surplus = sum(p["surplus"] for p in picks)
+        avg_surplus = total_surplus / len(picks) if picks else 0.0
+        result.append({
+            "roster_id": rid,
+            "grade": _letter_grade(avg_surplus),
+            "total_surplus": round(total_surplus, 2),
+            "avg_surplus_per_pick": round(avg_surplus, 2),
+            "picks": len(picks),
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["total_surplus"], reverse=True)
+    return result
+
+
+def stat_draft_reach_steal(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """
+    #72 Positional Runs & Reach/Steal – counts each team's steals and reaches
+    plus how many of their picks landed inside a positional run.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    pick_rows = _draft_pick_table(league_id, tw, len(rosters))
+    if not pick_rows:
+        return []
+
+    ordered = sorted(pick_rows, key=lambda x: x["pick_no"])
+
+    # Detect positional runs: 3+ consecutive picks of the same position.
+    in_run: set[int] = set()
+    run_start = 0
+    for i in range(1, len(ordered) + 1):
+        same = (
+            i < len(ordered)
+            and ordered[i]["position"]
+            and ordered[i]["position"] == ordered[run_start]["position"]
+        )
+        if not same:
+            if i - run_start >= 3 and ordered[run_start]["position"]:
+                for j in range(run_start, i):
+                    in_run.add(ordered[j]["pick_no"])
+            run_start = i
+
+    STEAL, REACH = 50.0, -50.0
+    agg: dict[int, dict[str, Any]] = {}
+    for row in pick_rows:
+        rid = row["roster_id"]
+        d = agg.setdefault(
+            rid, {"steals": 0, "reaches": 0, "picks_in_runs": 0, "best": 0.0}
+        )
+        if row["surplus"] >= STEAL:
+            d["steals"] += 1
+        elif row["surplus"] <= REACH:
+            d["reaches"] += 1
+        if row["pick_no"] in in_run:
+            d["picks_in_runs"] += 1
+        d["best"] = max(d["best"], row["surplus"])
+
+    result = []
+    for rid, d in agg.items():
+        user = rum.get(rid, {})
+        result.append({
+            "roster_id": rid,
+            "steals": d["steals"],
+            "reaches": d["reaches"],
+            "picks_in_runs": d["picks_in_runs"],
+            "best_steal_points": round(d["best"], 2),
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: (x["steals"] - x["reaches"]), reverse=True)
+    return result
+
+
+def _dynasty_age_multiplier(age: float | None) -> float:
+    """3-year discounted value multiplier from an age curve (peak ~24–27)."""
+    if age is None:
+        return 1.5
+    if age <= 23:
+        return 3.0
+    if age <= 27:
+        return 2.5
+    if age <= 29:
+        return 1.8
+    if age <= 31:
+        return 1.2
+    return 0.7
+
+
+def stat_keeper_dynasty_value(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """
+    #73 Keeper/Dynasty Asset Valuation – projects each roster's multi-year
+    value by weighting current production against an age-based value curve.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    nfl_players = get_nfl_players()
+    player_week_pts = _player_week_points(tw)
+
+    weeks_played = max(1, len({row["week"] for row in tw}))
+
+    result = []
+    for r in rosters:
+        rid = int(r["roster_id"])
+        user = rum.get(rid, {})
+        players = r.get("players") or []
+        dynasty_value = 0.0
+        ages: list[float] = []
+        young_value = 0.0
+        for pid in players:
+            ppg = sum(player_week_pts.get(pid, {}).values()) / weeks_played
+            info = nfl_players.get(pid, {})
+            age = info.get("age")
+            mult = _dynasty_age_multiplier(age)
+            value = ppg * mult
+            dynasty_value += value
+            if age is not None:
+                ages.append(float(age))
+                if age <= 25:
+                    young_value += value
+        result.append({
+            "roster_id": rid,
+            "dynasty_value": round(dynasty_value, 2),
+            "young_core_value": round(young_value, 2),
+            "avg_age": round(sum(ages) / len(ages), 1) if ages else None,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["dynasty_value"], reverse=True)
+    return result
+
+
+def stat_transaction_activity(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """
+    #74 Transaction Activity Heatmap – per-manager move counts (trades, waivers,
+    free agents) with a per-week breakdown for heatmap rendering.
+    """
+    txns = _collect_all_transactions(league_id, current_week)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+
+    def _new_counts() -> dict[str, Any]:
+        return {
+            "trades": 0,
+            "waivers": 0,
+            "free_agents": 0,
+            "weekly": [0] * (current_week + 1),  # 1-indexed by week
+        }
+
+    counts: dict[int, dict[str, Any]] = {
+        int(r["roster_id"]): _new_counts() for r in rosters
+    }
+
+    for txn in txns:
+        if txn.get("status") not in (None, "complete"):
+            continue
+        ttype = txn.get("type")
+        week = int(txn.get("leg", 1) or 1)
+        # Attribute the move to every roster involved.
+        involved: set[int] = set()
+        for rid in txn.get("roster_ids") or []:
+            involved.add(int(rid))
+        for rid in (txn.get("adds") or {}).values():
+            involved.add(int(rid))
+        for rid in (txn.get("drops") or {}).values():
+            involved.add(int(rid))
+        for rid in involved:
+            c = counts.setdefault(rid, _new_counts())
+            if ttype == "trade":
+                c["trades"] += 1
+            elif ttype == "waiver":
+                c["waivers"] += 1
+            elif ttype == "free_agent":
+                c["free_agents"] += 1
+            if 0 <= week < len(c["weekly"]):
+                c["weekly"][week] += 1
+
+    result = []
+    for rid, c in counts.items():
+        user = rum.get(rid, {})
+        total = c["trades"] + c["waivers"] + c["free_agents"]
+        result.append({
+            "roster_id": rid,
+            "total_moves": total,
+            "trades": c["trades"],
+            "waivers": c["waivers"],
+            "free_agents": c["free_agents"],
+            "weekly": c["weekly"],
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["total_moves"], reverse=True)
     return result

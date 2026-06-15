@@ -67,6 +67,10 @@ interface StatRowProps {
 function StatRow({ row, index }: StatRowProps) {
   const displayName = (row.display_name as string) ?? `Team ${row.roster_id}`
   const avatar = row.avatar as string | null
+  const playerName = row.player_name as string | undefined
+  const subtitle = [playerName, row.position as string | undefined]
+    .filter(Boolean)
+    .join(" · ")
 
   const numericFields = Object.entries(row).filter(
     ([k, v]) =>
@@ -76,6 +80,7 @@ function StatRow({ row, index }: StatRowProps) {
       k !== "player_id" &&
       k !== "instances" &&
       k !== "picks" &&
+      k !== "weekly" &&
       typeof v === "number",
   )
 
@@ -97,7 +102,14 @@ function StatRow({ row, index }: StatRowProps) {
               <Trophy className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
-          <span className="truncate font-semibold">{displayName}</span>
+          <div className="min-w-0">
+            <span className="block truncate font-semibold">{displayName}</span>
+            {subtitle && (
+              <span className="block truncate text-xs text-muted-foreground">
+                {subtitle}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex gap-4 shrink-0 ml-4">
@@ -235,7 +247,7 @@ function StatCard({
                 .slice(0, 12)
                 .map((row, i) => (
                   <StatRow
-                    key={(row.roster_id as string) ?? i}
+                    key={`${(row.roster_id as string) ?? (row.player_id as string) ?? "row"}-${i}`}
                     row={row}
                     index={i}
                   />
@@ -369,7 +381,7 @@ function FantasyStats() {
             Fantasy Stats
           </h1>
           <p className="text-muted-foreground">
-            Top 25 advanced stats powered by the Sleeper API
+            Advanced stat cards powered by the Sleeper API
           </p>
         </div>
       </div>
