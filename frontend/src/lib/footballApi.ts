@@ -114,6 +114,146 @@ export const SleeperService = {
   },
 }
 
+// ---- Insights API ----------------------------------------------------------
+
+export interface InsightsMeta {
+  ai_enabled: boolean
+  features: { key: string; title: string; description: string }[]
+}
+
+export interface WeeklyAward {
+  award: string
+  emoji: string
+  team: string
+  detail: string
+}
+
+export interface NarrativeResponse {
+  week?: number
+  through_week?: number
+  ai_enabled: boolean
+  narrative: string
+  facts?: Record<string, unknown>
+  awards?: WeeklyAward[]
+}
+
+export interface Storyline {
+  type: string
+  emoji: string
+  title: string
+  detail: string
+  teams: string[]
+}
+
+export interface AskResponse {
+  question: string
+  answer: string
+  ai_enabled: boolean
+}
+
+export interface PublishRecapResponse {
+  id: string
+  slug: string
+  title: string
+  published: boolean
+}
+
+export const InsightsService = {
+  async getMeta(): Promise<InsightsMeta> {
+    const res = await axios.get(`${getBaseUrl()}/api/v1/insights/meta`)
+    return res.data
+  },
+
+  async getWeeklyRecap(
+    leagueId?: string,
+    week?: number,
+  ): Promise<NarrativeResponse> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    if (week) params.week = week
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/insights/weekly-recap`,
+      {
+        params,
+      },
+    )
+    return res.data
+  },
+
+  async publishRecap(
+    leagueId: string | undefined,
+    week: number | undefined,
+    publish: boolean,
+  ): Promise<PublishRecapResponse> {
+    const headers = await getAuthHeaders()
+    const res = await axios.post(
+      `${getBaseUrl()}/api/v1/insights/weekly-recap/publish`,
+      { league_id: leagueId ?? "", week: week ?? null, publish },
+      { headers },
+    )
+    return res.data
+  },
+
+  async getMatchupPreviews(
+    leagueId?: string,
+    week?: number,
+  ): Promise<NarrativeResponse> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    if (week) params.week = week
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/insights/matchup-previews`,
+      { params },
+    )
+    return res.data
+  },
+
+  async getWeeklyAwards(
+    leagueId?: string,
+    week?: number,
+  ): Promise<NarrativeResponse> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    if (week) params.week = week
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/insights/weekly-awards`,
+      { params },
+    )
+    return res.data
+  },
+
+  async getSeasonYearbook(leagueId?: string): Promise<NarrativeResponse> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/insights/season-yearbook`,
+      { params },
+    )
+    return res.data
+  },
+
+  async getStorylines(
+    leagueId?: string,
+    week?: number,
+  ): Promise<{ week: number; storylines: Storyline[] }> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    if (week) params.week = week
+    const res = await axios.get(`${getBaseUrl()}/api/v1/insights/storylines`, {
+      params,
+    })
+    return res.data
+  },
+
+  async ask(question: string, leagueId?: string): Promise<AskResponse> {
+    const res = await axios.post(`${getBaseUrl()}/api/v1/insights/ask`, {
+      question,
+      league_id: leagueId ?? "",
+    })
+    return res.data
+  },
+}
+
 // ---- Blog API -------------------------------------------------------------
 
 export const BlogService = {
