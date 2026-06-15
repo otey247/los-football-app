@@ -10,6 +10,7 @@ import ReactDOM from "react-dom/client"
 import { ApiError, OpenAPI } from "./client"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
+import { LeagueProvider } from "./contexts/LeagueContext"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
@@ -44,7 +45,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <LeagueProvider>
+          <RouterProvider router={router} />
+        </LeagueProvider>
         <Toaster richColors closeButton />
       </QueryClientProvider>
     </ThemeProvider>

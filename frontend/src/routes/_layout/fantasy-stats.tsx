@@ -5,10 +5,15 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Link2,
   Loader2,
+  Star,
   Trophy,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+
+import { WeekSelector } from "@/components/Common/WeekSelector"
 import { StatChart } from "@/components/fantasy/StatCharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,10 +33,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useLeague } from "@/contexts/LeagueContext"
 import { SleeperService, type SleeperStatMeta } from "@/lib/footballApi"
+import { cn } from "@/lib/utils"
+
+interface FantasySearch {
+  league?: string
+  week?: number
+  stat?: string
+  category?: string
+}
 
 export const Route = createFileRoute("/_layout/fantasy-stats")({
   component: FantasyStats,
+  validateSearch: (search: Record<string, unknown>): FantasySearch => ({
+    league: typeof search.league === "string" ? search.league : undefined,
+    week:
+      search.week != null && Number.isFinite(Number(search.week))
+        ? Number(search.week)
+        : undefined,
+    stat: typeof search.stat === "string" ? search.stat : undefined,
+    category: typeof search.category === "string" ? search.category : undefined,
+  }),
   head: () => ({
     meta: [{ title: "Fantasy Stats - Los Football" }],
   }),
@@ -102,10 +125,27 @@ interface StatCardProps {
   meta: SleeperStatMeta
   leagueId: string
   week?: number
+  defaultExpanded?: boolean
+  isFavorite: boolean
+  onToggleFavorite: () => void
+  onShare: () => void
 }
 
-function StatCard({ meta, leagueId, week }: StatCardProps) {
-  const [expanded, setExpanded] = useState(false)
+function StatCard({
+  meta,
+  leagueId,
+  week,
+  defaultExpanded = false,
+  isFavorite,
+  onToggleFavorite,
+  onShare,
+}: StatCardProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+
+  // Re-open if a deep link targets this card after it has mounted.
+  useEffect(() => {
+    if (defaultExpanded) setExpanded(true)
+  }, [defaultExpanded])
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["sleeper-stat", meta.key, leagueId, week],
@@ -115,7 +155,10 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
   })
 
   return (
-    <Card className="overflow-hidden transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card">
+    <Card
+      id={`stat-${meta.key}`}
+      className="scroll-mt-24 overflow-hidden transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card"
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -129,19 +172,48 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
               {meta.description}
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded((v) => !v)}
-            disabled={!leagueId}
-            className="shrink-0"
-          >
-            {expanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex shrink-0 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleFavorite}
+              className="h-8 w-8"
+              aria-label={isFavorite ? "Unpin stat card" : "Pin stat card"}
+              aria-pressed={isFavorite}
+            >
+              <Star
+                className={cn(
+                  "h-4 w-4",
+                  isFavorite
+                    ? "fill-primary text-primary"
+                    : "text-muted-foreground",
+                )}
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onShare}
+              className="h-8 w-8"
+              aria-label="Copy shareable link"
+            >
+              <Link2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setExpanded((v) => !v)}
+              disabled={!leagueId}
+              className="h-8 w-8"
+              aria-label={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -193,11 +265,42 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
 }
 
 function FantasyStats() {
-  const [leagueId, setLeagueId] = useState(
-    () => localStorage.getItem("sleeper_league_id") ?? "",
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const {
+    activeLeagueId,
+    addLeague,
+    effectiveWeek,
+    setSelectedWeek,
+    favorites,
+    isFavorite,
+    toggleFavorite,
+  } = useLeague()
+
+  const [inputLeagueId, setInputLeagueId] = useState("")
+  const [filterCategory, setFilterCategory] = useState<string>(
+    search.category ?? "all",
   )
-  const [inputLeagueId, setInputLeagueId] = useState(leagueId)
-  const [filterCategory, setFilterCategory] = useState<string>("all")
+  const syncedRef = useRef(false)
+
+  // Apply deep-link search params to global state once on entry.
+  useEffect(() => {
+    if (syncedRef.current) return
+    syncedRef.current = true
+    if (search.league && search.league !== activeLeagueId) {
+      addLeague(search.league)
+    }
+    if (typeof search.week === "number") {
+      setSelectedWeek(search.week)
+    }
+  }, [search.league, search.week, activeLeagueId, addLeague, setSelectedWeek])
+
+  // Scroll a deep-linked stat card into view.
+  useEffect(() => {
+    if (!search.stat) return
+    const el = document.getElementById(`stat-${search.stat}`)
+    el?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }, [search.stat])
 
   const {
     data: statsMeta,
@@ -218,11 +321,51 @@ function FantasyStats() {
     (s) => filterCategory === "all" || s.category === filterCategory,
   )
 
-  const handleSaveLeague = () => {
-    const trimmed = inputLeagueId.trim()
-    setLeagueId(trimmed)
-    localStorage.setItem("sleeper_league_id", trimmed)
+  const pinnedStats = statsMeta?.filter((s) => favorites.includes(s.key)) ?? []
+
+  const handleCategory = (value: string) => {
+    setFilterCategory(value)
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        category: value === "all" ? undefined : value,
+      }),
+      replace: true,
+    })
   }
+
+  const handleAddLeague = () => {
+    const trimmed = inputLeagueId.trim()
+    if (!trimmed) return
+    addLeague(trimmed)
+    setInputLeagueId("")
+  }
+
+  const shareStat = (statKey: string) => {
+    const params = new URLSearchParams()
+    if (activeLeagueId) params.set("league", activeLeagueId)
+    params.set("week", String(effectiveWeek))
+    params.set("stat", statKey)
+    if (filterCategory !== "all") params.set("category", filterCategory)
+    const url = `${window.location.origin}/fantasy-stats?${params.toString()}`
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast.success("Shareable link copied to clipboard"))
+      .catch(() => toast.error("Could not copy link"))
+  }
+
+  const renderCard = (meta: SleeperStatMeta) => (
+    <StatCard
+      key={meta.key}
+      meta={meta}
+      leagueId={activeLeagueId}
+      week={effectiveWeek}
+      defaultExpanded={search.stat === meta.key}
+      isFavorite={isFavorite(meta.key)}
+      onToggleFavorite={() => toggleFavorite(meta.key)}
+      onShare={() => shareStat(meta.key)}
+    />
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -242,57 +385,69 @@ function FantasyStats() {
         </div>
       </div>
 
-      {/* League ID configuration */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            League Configuration
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Enter your Sleeper League ID to load stats. Find it in the Sleeper
-            app under League → Settings → League ID.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label htmlFor="league-id" className="text-xs mb-1 block">
-                Sleeper League ID
-              </Label>
-              <Input
-                id="league-id"
-                placeholder="e.g. 123456789012345678"
-                value={inputLeagueId}
-                onChange={(e) => setInputLeagueId(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSaveLeague()}
-                className="h-8 text-sm"
-              />
+      {/* League configuration — only when no league is active yet */}
+      {!activeLeagueId && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              League Configuration
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Enter your Sleeper League ID to load stats. Find it in the Sleeper
+              app under League → Settings → League ID. You can switch leagues
+              any time from the top navigation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Label htmlFor="league-id" className="text-xs mb-1 block">
+                  Sleeper League ID
+                </Label>
+                <Input
+                  id="league-id"
+                  placeholder="e.g. 123456789012345678"
+                  value={inputLeagueId}
+                  onChange={(e) => setInputLeagueId(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddLeague()}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <Button size="sm" onClick={handleAddLeague} className="h-8">
+                Load League
+              </Button>
             </div>
-            <Button size="sm" onClick={handleSaveLeague} className="h-8">
-              Load League
-            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Week selector */}
+      {activeLeagueId && <WeekSelector />}
+
+      {/* Pinned / favorites rail */}
+      {activeLeagueId && pinnedStats.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              Pinned stat cards
+            </h2>
+            <Badge variant="secondary" className="text-[11px]">
+              {pinnedStats.length}
+            </Badge>
           </div>
-          {leagueId && (
-            <p className="mt-3 text-xs font-medium text-muted-foreground">
-              League ID set:{" "}
-              <code className="font-mono text-foreground">{leagueId}</code>
-            </p>
-          )}
-          {!leagueId && (
-            <p className="mt-3 text-xs font-medium text-muted-foreground">
-              Enter a league ID above then click "Load League" to expand any
-              stat card
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {pinnedStats.map(renderCard)}
+          </div>
+        </div>
+      )}
 
       {/* Category filter */}
       <div className="flex items-center gap-3 flex-wrap rounded-xl border border-border/70 bg-card/60 p-3">
         <Label className="text-sm font-bold text-muted-foreground">
           Filter by category:
         </Label>
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
+        <Select value={filterCategory} onValueChange={handleCategory}>
           <SelectTrigger className="w-48 h-8 text-sm">
             <SelectValue />
           </SelectTrigger>
@@ -333,9 +488,7 @@ function FantasyStats() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredStats?.map((meta) => (
-            <StatCard key={meta.key} meta={meta} leagueId={leagueId} />
-          ))}
+          {filteredStats?.map(renderCard)}
         </div>
       )}
     </div>
