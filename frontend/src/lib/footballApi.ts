@@ -257,6 +257,292 @@ export const InsightsService = {
   },
 }
 
+// ---- Matchup & Win Probability API ----------------------------------------
+
+export interface MatchupFeature {
+  key: string
+  title: string
+  description: string
+}
+
+export interface TeamRef {
+  roster_id: number
+  display_name: string
+  avatar?: string | null
+}
+
+export interface WinProbTeam extends TeamRef {
+  projected_points: number
+  std?: number
+  win_probability: number
+}
+
+export interface WinProbMatchup {
+  matchup: WinProbTeam[]
+  favorite_roster_id?: number
+  spread?: number
+}
+
+export interface WinProbResponse {
+  week: number
+  matchups: WinProbMatchup[]
+}
+
+export interface LiveWinProbTeam extends TeamRef {
+  current_points: number
+  projected_points: number
+  starters_yet_to_play: number
+  win_probability: number
+}
+
+export interface LiveWinProbResponse {
+  week: number
+  matchups: { matchup: LiveWinProbTeam[] }[]
+}
+
+export interface ProjectionAccuracyResponse {
+  through_week: number
+  overall: {
+    mae: number | null
+    rmse: number | null
+    bias: number | null
+    pick_accuracy: number | null
+    picks_correct: number
+    picks_total: number
+    scored_samples: number
+  }
+  by_week: { week: number; mae: number; samples: number }[]
+}
+
+export interface LineupPlayer {
+  player_id: string
+  name: string
+  position?: string | null
+  team?: string | null
+  projected_points: number
+}
+
+export interface LineupOptionsResponse extends TeamRef {
+  week: number
+  starters: LineupPlayer[]
+  bench: LineupPlayer[]
+}
+
+export interface WhatIfResponse extends TeamRef {
+  week: number
+  swap_out: { player_id: string; name: string; projected_points: number }
+  swap_in: { player_id: string; name: string; projected_points: number }
+  current_projected_total: number
+  new_projected_total: number
+  delta: number
+  opponent?: TeamRef & { projected_points: number }
+  win_probability_before?: number
+  win_probability_after?: number
+  win_probability_delta?: number
+}
+
+export interface ClinchTeam extends TeamRef {
+  wins: number
+  losses: number
+  ties: number
+  points_for: number
+  games_remaining: number
+  max_possible_wins: number
+  status: "clinched" | "eliminated" | "in_contention"
+  clinch_magic_number: number | null
+}
+
+export interface ClinchResponse {
+  through_week: number
+  playoff_teams: number
+  playoff_start: number
+  teams: ClinchTeam[]
+}
+
+export interface SeasonSimTeam extends TeamRef {
+  current_wins: number
+  current_losses: number
+  points_for: number
+  projected_wins: number
+  projected_points: number
+  playoff_probability: number
+  avg_seed: number
+  seed_distribution: number[]
+}
+
+export interface SeasonSimResponse {
+  through_week: number
+  simulations: number
+  playoff_teams: number
+  teams: SeasonSimTeam[]
+}
+
+export interface PlayoffOddsTeam extends TeamRef {
+  current_wins: number
+  current_losses: number
+  points_for: number
+  playoff_probability: number
+  trend: { week: number; playoff_probability: number }[]
+}
+
+export interface PlayoffOddsResponse {
+  through_week: number
+  simulations: number
+  playoff_teams: number
+  teams: PlayoffOddsTeam[]
+}
+
+export interface ChampionshipTeam extends TeamRef {
+  playoff_probability: number
+  finals_probability: number
+  championship_probability: number
+  avg_seed: number
+}
+
+export interface BracketGame {
+  high_seed: TeamRef & { seed: number | null }
+  low_seed: TeamRef & { seed: number | null }
+  favorite_roster_id: number
+  favorite_win_probability: number
+}
+
+export interface BracketRound {
+  round: number
+  name: string
+  games: BracketGame[]
+}
+
+export interface ChampionshipResponse {
+  through_week: number
+  simulations: number
+  playoff_teams: number
+  teams: ChampionshipTeam[]
+  projected_bracket: BracketRound[]
+}
+
+function matchupParams(
+  leagueId?: string,
+  week?: number,
+): Record<string, string | number> {
+  const params: Record<string, string | number> = {}
+  if (leagueId) params.league_id = leagueId
+  if (week) params.week = week
+  return params
+}
+
+export const MatchupService = {
+  async getMeta(): Promise<{ features: MatchupFeature[] }> {
+    const res = await axios.get(`${getBaseUrl()}/api/v1/matchup/meta`)
+    return res.data
+  },
+
+  async getWinProbability(
+    leagueId?: string,
+    week?: number,
+  ): Promise<WinProbResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/win-probability`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+
+  async getLiveWinProbability(
+    leagueId?: string,
+    week?: number,
+  ): Promise<LiveWinProbResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/live-win-probability`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+
+  async getProjectionAccuracy(
+    leagueId?: string,
+    week?: number,
+  ): Promise<ProjectionAccuracyResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/projection-accuracy`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+
+  async getLineupOptions(
+    rosterId: number,
+    leagueId?: string,
+    week?: number,
+  ): Promise<LineupOptionsResponse> {
+    const params = { ...matchupParams(leagueId, week), roster_id: rosterId }
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/lineup-options`,
+      { params },
+    )
+    return res.data
+  },
+
+  async postWhatIf(body: {
+    leagueId?: string
+    rosterId: number
+    week?: number
+    swapOut: string
+    swapIn: string
+  }): Promise<WhatIfResponse> {
+    const res = await axios.post(`${getBaseUrl()}/api/v1/matchup/what-if`, {
+      league_id: body.leagueId ?? "",
+      roster_id: body.rosterId,
+      week: body.week ?? null,
+      swap_out: body.swapOut,
+      swap_in: body.swapIn,
+    })
+    return res.data
+  },
+
+  async getClinchScenarios(
+    leagueId?: string,
+    week?: number,
+  ): Promise<ClinchResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/clinch-scenarios`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+
+  async getSeasonSimulation(
+    leagueId?: string,
+    week?: number,
+  ): Promise<SeasonSimResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/season-simulation`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+
+  async getPlayoffOdds(
+    leagueId?: string,
+    week?: number,
+  ): Promise<PlayoffOddsResponse> {
+    const res = await axios.get(`${getBaseUrl()}/api/v1/matchup/playoff-odds`, {
+      params: matchupParams(leagueId, week),
+    })
+    return res.data
+  },
+
+  async getChampionshipOdds(
+    leagueId?: string,
+    week?: number,
+  ): Promise<ChampionshipResponse> {
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/matchup/championship-odds`,
+      { params: matchupParams(leagueId, week) },
+    )
+    return res.data
+  },
+}
+
 // ---- Blog API -------------------------------------------------------------
 
 export const BlogService = {

@@ -91,14 +91,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [ ] 58. Streaming value tracker for DST/K/QB matchup-based plays
 
 ### 2.3 Matchup & Win Probability
-- [ ] 59. Pre-game win probability model for each weekly matchup
-- [ ] 60. Live in-game win probability that updates as scores come in
-- [ ] 61. Projected vs actual score accuracy tracking over the season
-- [ ] 62. Matchup "what-if" simulator (swap a starter, see projected delta)
-- [ ] 63. Tiebreaker and clinch/elimination scenario calculator
-- [ ] 64. Monte Carlo season simulation for projected final standings
-- [ ] 65. Playoff probability % per team, updated weekly
-- [ ] 66. Championship odds and projected bracket paths
+- [x] 59. Pre-game win probability model for each weekly matchup
+- [x] 60. Live in-game win probability that updates as scores come in
+- [x] 61. Projected vs actual score accuracy tracking over the season
+- [x] 62. Matchup "what-if" simulator (swap a starter, see projected delta)
+- [x] 63. Tiebreaker and clinch/elimination scenario calculator
+- [x] 64. Monte Carlo season simulation for projected final standings
+- [x] 65. Playoff probability % per team, updated weekly
+- [x] 66. Championship odds and projected bracket paths
 
 ### 2.4 Transactions: Waivers, Trades & Draft
 - [ ] 67. Waiver wire spend efficiency (FAAB spent vs points gained)

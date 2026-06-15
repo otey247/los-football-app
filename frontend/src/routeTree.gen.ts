@@ -17,6 +17,7 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-admin'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutMatchupsRouteImport } from './routes/_layout/matchups'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutInsightsRouteImport } from './routes/_layout/insights'
 import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
@@ -63,6 +64,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutMatchupsRoute = LayoutMatchupsRouteImport.update({
+  id: '/matchups',
+  path: '/matchups',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
+  '/matchups': typeof LayoutMatchupsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/blog/$postId': typeof LayoutBlogPostIdRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
+  '/matchups': typeof LayoutMatchupsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/': typeof LayoutIndexRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/_layout/insights': typeof LayoutInsightsRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/matchups': typeof LayoutMatchupsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/super-admin': typeof LayoutSuperAdminRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/fantasy-stats'
     | '/insights'
     | '/items'
+    | '/matchups'
     | '/settings'
     | '/super-admin'
     | '/blog/$postId'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/fantasy-stats'
     | '/insights'
     | '/items'
+    | '/matchups'
     | '/settings'
     | '/super-admin'
     | '/'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/_layout/fantasy-stats'
     | '/_layout/insights'
     | '/_layout/items'
+    | '/_layout/matchups'
     | '/_layout/settings'
     | '/_layout/super-admin'
     | '/_layout/'
@@ -256,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/matchups': {
+      id: '/_layout/matchups'
+      path: '/matchups'
+      fullPath: '/matchups'
+      preLoaderRoute: typeof LayoutMatchupsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
@@ -319,6 +338,7 @@ interface LayoutRouteChildren {
   LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
   LayoutInsightsRoute: typeof LayoutInsightsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutMatchupsRoute: typeof LayoutMatchupsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSuperAdminRoute: typeof LayoutSuperAdminRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -330,6 +350,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
   LayoutInsightsRoute: LayoutInsightsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutMatchupsRoute: LayoutMatchupsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSuperAdminRoute: LayoutSuperAdminRoute,
   LayoutIndexRoute: LayoutIndexRoute,
