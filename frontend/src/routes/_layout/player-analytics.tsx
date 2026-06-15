@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
-  BarChart3,
   ChevronDown,
   ChevronUp,
   Info,
   Link2,
   Loader2,
-  Star,
   Trophy,
+  UsersRound,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -33,19 +32,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useLeague } from "@/contexts/LeagueContext"
-import { SleeperService, type SleeperStatMeta } from "@/lib/footballApi"
-import { cn } from "@/lib/utils"
+import { PlayerAnalyticsService, type PlayerStatMeta } from "@/lib/footballApi"
 
-interface FantasySearch {
+interface PlayerSearch {
   league?: string
   week?: number
   stat?: string
   category?: string
 }
 
-export const Route = createFileRoute("/_layout/fantasy-stats")({
-  component: FantasyStats,
-  validateSearch: (search: Record<string, unknown>): FantasySearch => ({
+export const Route = createFileRoute("/_layout/player-analytics")({
+  component: PlayerAnalytics,
+  validateSearch: (search: Record<string, unknown>): PlayerSearch => ({
     league: typeof search.league === "string" ? search.league : undefined,
     week:
       search.week != null && Number.isFinite(Number(search.week))
@@ -55,75 +53,123 @@ export const Route = createFileRoute("/_layout/fantasy-stats")({
     category: typeof search.category === "string" ? search.category : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Fantasy Stats - Los Football" }],
+    meta: [{ title: "Player Analytics - Los Football" }],
   }),
 })
 
-interface StatRowProps {
-  row: Record<string, unknown>
-  index: number
+// Keys handled explicitly by the renderer (not shown as generic numeric stats).
+const META_KEYS = new Set([
+  "roster_id",
+  "player_id",
+  "display_name",
+  "avatar",
+  "player_name",
+  "position",
+  "team",
+  "classification",
+  "flag",
+  "injured",
+])
+
+const FLAG_VARIANTS: Record<string, string> = {
+  "Buy Low": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  "Sell High": "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  Rookie: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  Breakout: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  "Boom/Bust": "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+  Consistent: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  Balanced: "bg-slate-500/15 text-slate-600 dark:text-slate-400",
 }
 
-function StatRow({ row, index }: StatRowProps) {
-  const displayName = (row.display_name as string) ?? `Team ${row.roster_id}`
-  const avatar = row.avatar as string | null
+interface InjuredPlayer {
+  player_name: string
+  position: string
+  status: string
+}
+
+function formatNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+}
+
+function PlayerRow({
+  row,
+  index,
+}: {
+  row: Record<string, unknown>
+  index: number
+}) {
+  // Player-level rows carry a player_name; roster-level rows fall back to the
+  // owner display_name + avatar.
   const playerName = row.player_name as string | undefined
-  const subtitle = [playerName, row.position as string | undefined]
-    .filter(Boolean)
-    .join(" · ")
+  const ownerName = (row.display_name as string) ?? `Team ${row.roster_id}`
+  const primary = playerName ?? ownerName
+  const avatar = row.avatar as string | null | undefined
+  const position = row.position as string | undefined
+  const team = row.team as string | null | undefined
+  const flag =
+    (row.flag as string) ?? (row.classification as string) ?? undefined
+  const injured = Array.isArray(row.injured)
+    ? (row.injured as InjuredPlayer[])
+    : undefined
 
   const numericFields = Object.entries(row).filter(
-    ([k, v]) =>
-      k !== "roster_id" &&
-      k !== "display_name" &&
-      k !== "avatar" &&
-      k !== "player_id" &&
-      k !== "instances" &&
-      k !== "picks" &&
-      k !== "weekly" &&
-      typeof v === "number",
+    ([k, v]) => !META_KEYS.has(k) && typeof v === "number",
   )
 
   return (
-    <div className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/65">
+    <div className="flex flex-col gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/65 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3 min-w-0">
         <span className="w-6 shrink-0 text-sm font-black tabular-nums text-muted-foreground">
           {index + 1}
         </span>
-        <div className="flex items-center gap-2 min-w-0">
-          {avatar ? (
-            <img
-              src={`https://sleepercdn.com/avatars/thumbs/${avatar}`}
-              alt={displayName}
-              className="h-8 w-8 shrink-0 rounded-full ring-1 ring-border/80"
-            />
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border/80">
-              <Trophy className="w-4 h-4 text-muted-foreground" />
-            </div>
-          )}
-          <div className="min-w-0">
-            <span className="block truncate font-semibold">{displayName}</span>
-            {subtitle && (
-              <span className="block truncate text-xs text-muted-foreground">
-                {subtitle}
-              </span>
+        {playerName ? (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border/80 text-[11px] font-black">
+            {position ?? "?"}
+          </div>
+        ) : avatar ? (
+          <img
+            src={`https://sleepercdn.com/avatars/thumbs/${avatar}`}
+            alt={primary}
+            className="h-8 w-8 shrink-0 rounded-full ring-1 ring-border/80"
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border/80">
+            <Trophy className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate font-semibold">{primary}</span>
+            {flag && (
+              <Badge
+                variant="secondary"
+                className={`shrink-0 text-[10px] ${FLAG_VARIANTS[flag] ?? ""}`}
+              >
+                {flag}
+              </Badge>
             )}
           </div>
+          {playerName && (
+            <p className="truncate text-xs text-muted-foreground">
+              {[team, position].filter(Boolean).join(" · ")}
+              {ownerName ? ` — ${ownerName}` : ""}
+            </p>
+          )}
+          {injured && injured.length > 0 && (
+            <p className="truncate text-xs text-muted-foreground">
+              {injured.map((p) => `${p.player_name} (${p.status})`).join(", ")}
+            </p>
+          )}
         </div>
       </div>
-      <div className="flex gap-4 shrink-0 ml-4">
+      <div className="flex shrink-0 gap-4 pl-9 sm:ml-4 sm:pl-0">
         {numericFields.slice(0, 3).map(([key, value]) => (
           <div key={key} className="text-right">
             <p className="text-xs font-semibold capitalize text-muted-foreground">
               {key.replace(/_/g, " ")}
             </p>
             <p className="text-sm font-black tabular-nums">
-              {typeof value === "number"
-                ? Number.isInteger(value)
-                  ? value
-                  : value.toFixed(2)
-                : String(value)}
+              {formatNumber(value as number)}
             </p>
           </div>
         ))}
@@ -132,42 +178,35 @@ function StatRow({ row, index }: StatRowProps) {
   )
 }
 
-interface StatCardProps {
-  meta: SleeperStatMeta
-  leagueId: string
-  week?: number
-  defaultExpanded?: boolean
-  isFavorite: boolean
-  onToggleFavorite: () => void
-  onShare: () => void
-}
-
-function StatCard({
+function PlayerStatCard({
   meta,
   leagueId,
   week,
   defaultExpanded = false,
-  isFavorite,
-  onToggleFavorite,
   onShare,
-}: StatCardProps) {
+}: {
+  meta: PlayerStatMeta
+  leagueId: string
+  week?: number
+  defaultExpanded?: boolean
+  onShare: () => void
+}) {
   const [expanded, setExpanded] = useState(defaultExpanded)
 
-  // Re-open if a deep link targets this card after it has mounted.
   useEffect(() => {
     if (defaultExpanded) setExpanded(true)
   }, [defaultExpanded])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["sleeper-stat", meta.key, leagueId, week],
-    queryFn: () => SleeperService.getStat(meta.key, leagueId, week),
+    queryKey: ["player-analytics-stat", meta.key, leagueId, week],
+    queryFn: () => PlayerAnalyticsService.getStat(meta.key, leagueId, week),
     enabled: !!leagueId && expanded,
     retry: false,
   })
 
   return (
     <Card
-      id={`stat-${meta.key}`}
+      id={`player-stat-${meta.key}`}
       className="scroll-mt-24 overflow-hidden transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card"
     >
       <CardHeader className="pb-2">
@@ -184,23 +223,6 @@ function StatCard({
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleFavorite}
-              className="h-8 w-8"
-              aria-label={isFavorite ? "Unpin stat card" : "Pin stat card"}
-              aria-pressed={isFavorite}
-            >
-              <Star
-                className={cn(
-                  "h-4 w-4",
-                  isFavorite
-                    ? "fill-primary text-primary"
-                    : "text-muted-foreground",
-                )}
-              />
-            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -244,10 +266,14 @@ function StatCard({
           {data && Array.isArray(data) && data.length > 0 && (
             <div className="divide-y divide-border/60">
               {(data as Record<string, unknown>[])
-                .slice(0, 12)
+                .slice(0, 15)
                 .map((row, i) => (
-                  <StatRow
-                    key={`${(row.roster_id as string) ?? (row.player_id as string) ?? "row"}-${i}`}
+                  <PlayerRow
+                    key={
+                      (row.player_id as string) ??
+                      (row.roster_id as string) ??
+                      i
+                    }
                     row={row}
                     index={i}
                   />
@@ -265,18 +291,11 @@ function StatCard({
   )
 }
 
-function FantasyStats() {
+function PlayerAnalytics() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const {
-    activeLeagueId,
-    addLeague,
-    effectiveWeek,
-    setSelectedWeek,
-    favorites,
-    isFavorite,
-    toggleFavorite,
-  } = useLeague()
+  const { activeLeagueId, addLeague, effectiveWeek, setSelectedWeek } =
+    useLeague()
 
   const [inputLeagueId, setInputLeagueId] = useState("")
   const [filterCategory, setFilterCategory] = useState<string>(
@@ -284,7 +303,6 @@ function FantasyStats() {
   )
   const syncedRef = useRef(false)
 
-  // Apply deep-link search params to global state once on entry.
   useEffect(() => {
     if (syncedRef.current) return
     syncedRef.current = true
@@ -296,10 +314,9 @@ function FantasyStats() {
     }
   }, [search.league, search.week, activeLeagueId, addLeague, setSelectedWeek])
 
-  // Scroll a deep-linked stat card into view.
   useEffect(() => {
     if (!search.stat) return
-    const el = document.getElementById(`stat-${search.stat}`)
+    const el = document.getElementById(`player-stat-${search.stat}`)
     el?.scrollIntoView({ behavior: "smooth", block: "center" })
   }, [search.stat])
 
@@ -309,8 +326,8 @@ function FantasyStats() {
     isError: metaError,
     refetch: refetchMeta,
   } = useQuery({
-    queryKey: ["sleeper-meta"],
-    queryFn: SleeperService.getStatsMeta,
+    queryKey: ["player-analytics-meta"],
+    queryFn: PlayerAnalyticsService.getStatsMeta,
     retry: false,
   })
 
@@ -321,8 +338,6 @@ function FantasyStats() {
   const filteredStats = statsMeta?.filter(
     (s) => filterCategory === "all" || s.category === filterCategory,
   )
-
-  const pinnedStats = statsMeta?.filter((s) => favorites.includes(s.key)) ?? []
 
   const handleCategory = (value: string) => {
     setFilterCategory(value)
@@ -348,25 +363,12 @@ function FantasyStats() {
     params.set("week", String(effectiveWeek))
     params.set("stat", statKey)
     if (filterCategory !== "all") params.set("category", filterCategory)
-    const url = `${window.location.origin}/fantasy-stats?${params.toString()}`
+    const url = `${window.location.origin}/player-analytics?${params.toString()}`
     navigator.clipboard
       .writeText(url)
       .then(() => toast.success("Shareable link copied to clipboard"))
       .catch(() => toast.error("Could not copy link"))
   }
-
-  const renderCard = (meta: SleeperStatMeta) => (
-    <StatCard
-      key={meta.key}
-      meta={meta}
-      leagueId={activeLeagueId}
-      week={effectiveWeek}
-      defaultExpanded={search.stat === meta.key}
-      isFavorite={isFavorite(meta.key)}
-      onToggleFavorite={() => toggleFavorite(meta.key)}
-      onShare={() => shareStat(meta.key)}
-    />
-  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -377,11 +379,12 @@ function FantasyStats() {
             Analytics Suite
           </p>
           <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-7 w-7 text-primary" />
-            Fantasy Stats
+            <UsersRound className="h-7 w-7 text-primary" />
+            Player Analytics
           </h1>
           <p className="text-muted-foreground">
-            Advanced stat cards powered by the Sleeper API
+            Player-level production, usage, value, and availability from the
+            Sleeper API
           </p>
         </div>
       </div>
@@ -394,9 +397,8 @@ function FantasyStats() {
               League Configuration
             </CardTitle>
             <CardDescription className="text-xs">
-              Enter your Sleeper League ID to load stats. Find it in the Sleeper
-              app under League → Settings → League ID. You can switch leagues
-              any time from the top navigation.
+              Enter your Sleeper League ID to load player analytics. Find it in
+              the Sleeper app under League → Settings → League ID.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -424,24 +426,6 @@ function FantasyStats() {
 
       {/* Week selector */}
       {activeLeagueId && <WeekSelector />}
-
-      {/* Pinned / favorites rail */}
-      {activeLeagueId && pinnedStats.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 fill-primary text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              Pinned stat cards
-            </h2>
-            <Badge variant="secondary" className="text-[11px]">
-              {pinnedStats.length}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pinnedStats.map(renderCard)}
-          </div>
-        </div>
-      )}
 
       {/* Category filter */}
       <div className="flex items-center gap-3 flex-wrap rounded-xl border border-border/70 bg-card/60 p-3">
@@ -477,7 +461,7 @@ function FantasyStats() {
           <CardContent className="flex flex-col items-center justify-center py-12 gap-3 text-center">
             <Info className="h-8 w-8 text-destructive" />
             <div>
-              <p className="font-medium">Unable to load fantasy stat cards</p>
+              <p className="font-medium">Unable to load player analytics</p>
               <p className="text-sm text-muted-foreground">
                 Check that the backend is running and try again.
               </p>
@@ -489,7 +473,16 @@ function FantasyStats() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredStats?.map(renderCard)}
+          {filteredStats?.map((meta) => (
+            <PlayerStatCard
+              key={meta.key}
+              meta={meta}
+              leagueId={activeLeagueId}
+              week={effectiveWeek}
+              defaultExpanded={search.stat === meta.key}
+              onShare={() => shareStat(meta.key)}
+            />
+          ))}
         </div>
       )}
     </div>

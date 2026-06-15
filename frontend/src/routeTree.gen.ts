@@ -17,10 +17,12 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-admin'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutPlayerAnalyticsRouteImport } from './routes/_layout/player-analytics'
 import { Route as LayoutMatchupsRouteImport } from './routes/_layout/matchups'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutInsightsRouteImport } from './routes/_layout/insights'
 import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
+import { Route as LayoutCoachRouteImport } from './routes/_layout/coach'
 import { Route as LayoutBlogRouteImport } from './routes/_layout/blog'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutBlogPostIdRouteImport } from './routes/_layout/blog.$postId'
@@ -64,6 +66,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutPlayerAnalyticsRoute = LayoutPlayerAnalyticsRouteImport.update({
+  id: '/player-analytics',
+  path: '/player-analytics',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutMatchupsRoute = LayoutMatchupsRouteImport.update({
   id: '/matchups',
   path: '/matchups',
@@ -82,6 +89,11 @@ const LayoutInsightsRoute = LayoutInsightsRouteImport.update({
 const LayoutFantasyStatsRoute = LayoutFantasyStatsRouteImport.update({
   id: '/fantasy-stats',
   path: '/fantasy-stats',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCoachRoute = LayoutCoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutBlogRoute = LayoutBlogRouteImport.update({
@@ -108,10 +120,12 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
+  '/coach': typeof LayoutCoachRoute
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
   '/matchups': typeof LayoutMatchupsRoute
+  '/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/blog/$postId': typeof LayoutBlogPostIdRoute
@@ -123,10 +137,12 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
+  '/coach': typeof LayoutCoachRoute
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
   '/matchups': typeof LayoutMatchupsRoute
+  '/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/': typeof LayoutIndexRoute
@@ -141,10 +157,12 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/blog': typeof LayoutBlogRouteWithChildren
+  '/_layout/coach': typeof LayoutCoachRoute
   '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/_layout/insights': typeof LayoutInsightsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/matchups': typeof LayoutMatchupsRoute
+  '/_layout/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/super-admin': typeof LayoutSuperAdminRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -160,10 +178,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/blog'
+    | '/coach'
     | '/fantasy-stats'
     | '/insights'
     | '/items'
     | '/matchups'
+    | '/player-analytics'
     | '/settings'
     | '/super-admin'
     | '/blog/$postId'
@@ -175,10 +195,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/blog'
+    | '/coach'
     | '/fantasy-stats'
     | '/insights'
     | '/items'
     | '/matchups'
+    | '/player-analytics'
     | '/settings'
     | '/super-admin'
     | '/'
@@ -192,10 +214,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/blog'
+    | '/_layout/coach'
     | '/_layout/fantasy-stats'
     | '/_layout/insights'
     | '/_layout/items'
     | '/_layout/matchups'
+    | '/_layout/player-analytics'
     | '/_layout/settings'
     | '/_layout/super-admin'
     | '/_layout/'
@@ -268,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/player-analytics': {
+      id: '/_layout/player-analytics'
+      path: '/player-analytics'
+      fullPath: '/player-analytics'
+      preLoaderRoute: typeof LayoutPlayerAnalyticsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/matchups': {
       id: '/_layout/matchups'
       path: '/matchups'
@@ -294,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/fantasy-stats'
       fullPath: '/fantasy-stats'
       preLoaderRoute: typeof LayoutFantasyStatsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/coach': {
+      id: '/_layout/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof LayoutCoachRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/blog': {
@@ -335,10 +373,12 @@ const LayoutBlogRouteWithChildren = LayoutBlogRoute._addFileChildren(
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutBlogRoute: typeof LayoutBlogRouteWithChildren
+  LayoutCoachRoute: typeof LayoutCoachRoute
   LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
   LayoutInsightsRoute: typeof LayoutInsightsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutMatchupsRoute: typeof LayoutMatchupsRoute
+  LayoutPlayerAnalyticsRoute: typeof LayoutPlayerAnalyticsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSuperAdminRoute: typeof LayoutSuperAdminRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -347,10 +387,12 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutBlogRoute: LayoutBlogRouteWithChildren,
+  LayoutCoachRoute: LayoutCoachRoute,
   LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
   LayoutInsightsRoute: LayoutInsightsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutMatchupsRoute: LayoutMatchupsRoute,
+  LayoutPlayerAnalyticsRoute: LayoutPlayerAnalyticsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSuperAdminRoute: LayoutSuperAdminRoute,
   LayoutIndexRoute: LayoutIndexRoute,
