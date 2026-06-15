@@ -2,6 +2,7 @@ import {
   BarChart3,
   BookOpen,
   Briefcase,
+  Database,
   Home,
   ShieldCheck,
   Sparkles,
@@ -30,6 +31,7 @@ const baseItems: Item[] = [
   { icon: Swords, title: "Matchups", path: "/matchups" },
   { icon: Sparkles, title: "Insights", path: "/insights" },
   { icon: Target, title: "Coach", path: "/coach" },
+  { icon: Database, title: "Reporting", path: "/reporting" },
   { icon: BookOpen, title: "Blog", path: "/blog" },
   { icon: Briefcase, title: "Items", path: "/items" },
 ]

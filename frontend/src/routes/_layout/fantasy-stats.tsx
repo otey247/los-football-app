@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BarChart3, ChevronDown, ChevronUp, Link2, Star } from "lucide-react"
+import {
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Link2,
+  Star,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -34,7 +41,11 @@ import {
 } from "@/components/ui/select"
 import { useLeague } from "@/contexts/LeagueContext"
 import { usePreferences } from "@/contexts/PreferencesContext"
-import { SleeperService, type SleeperStatMeta } from "@/lib/footballApi"
+import {
+  ReportingService,
+  SleeperService,
+  type SleeperStatMeta,
+} from "@/lib/footballApi"
 import { teamColorFromSeed } from "@/lib/teamColor"
 import { cn } from "@/lib/utils"
 
@@ -162,6 +173,7 @@ interface StatCardProps {
   meta: SleeperStatMeta
   leagueId: string
   week?: number
+  startWeek?: number
   defaultExpanded?: boolean
   isFavorite: boolean
   onToggleFavorite: () => void
@@ -172,12 +184,14 @@ function StatCard({
   meta,
   leagueId,
   week,
+  startWeek,
   defaultExpanded = false,
   isFavorite,
   onToggleFavorite,
   onShare,
 }: StatCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+  const [exporting, setExporting] = useState(false)
 
   // Re-open if a deep link targets this card after it has mounted.
   useEffect(() => {
@@ -185,11 +199,34 @@ function StatCard({
   }, [defaultExpanded])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["sleeper-stat", meta.key, leagueId, week],
-    queryFn: () => SleeperService.getStat(meta.key, leagueId, week),
+    queryKey: ["sleeper-stat", meta.key, leagueId, week, startWeek],
+    queryFn: () => SleeperService.getStat(meta.key, leagueId, week, startWeek),
     enabled: !!leagueId && expanded,
     retry: false,
   })
+
+  // #79 Record which stat cards managers actually open.
+  useEffect(() => {
+    if (expanded && leagueId) {
+      ReportingService.recordUsage("card_open", meta.key, "/fantasy-stats")
+    }
+  }, [expanded, leagueId, meta.key])
+
+  const handleExport = async (format: "csv" | "json") => {
+    setExporting(true)
+    try {
+      await SleeperService.exportStat(
+        meta.key,
+        format,
+        leagueId,
+        week,
+        startWeek,
+      )
+      ReportingService.recordUsage("export", `${meta.key}:${format}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <Card
@@ -289,6 +326,30 @@ function StatCard({
                     />
                   ))}
               </div>
+              {/* #75 CSV / JSON export */}
+              <div className="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-3">
+                <span className="mr-auto text-xs text-muted-foreground">
+                  Export this table
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={exporting}
+                  onClick={() => handleExport("csv")}
+                >
+                  <Download className="mr-1 h-3 w-3" /> CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={exporting}
+                  onClick={() => handleExport("json")}
+                >
+                  <Download className="mr-1 h-3 w-3" /> JSON
+                </Button>
+              </div>
             </>
           )}
           {data && Array.isArray(data) && data.length === 0 && (
@@ -322,7 +383,15 @@ function FantasyStats() {
   const [filterCategory, setFilterCategory] = useState<string>(
     search.category ?? "all",
   )
+  // #77 Custom week-range filtering: effectiveWeek is the inclusive end, this is
+  // the optional start (blank = full season to date).
+  const [startWeek, setStartWeek] = useState<string>("")
+  const startWeekNum = startWeek ? Number(startWeek) : undefined
   const syncedRef = useRef(false)
+
+  useEffect(() => {
+    ReportingService.recordUsage("page_view", "fantasy-stats", "/fantasy-stats")
+  }, [])
 
   // Apply deep-link search params to global state once on entry.
   useEffect(() => {
@@ -401,6 +470,7 @@ function FantasyStats() {
       meta={meta}
       leagueId={activeLeagueId}
       week={effectiveWeek}
+      startWeek={startWeekNum}
       defaultExpanded={search.stat === meta.key}
       isFavorite={isFavorite(meta.key)}
       onToggleFavorite={() => toggleFavorite(meta.key)}
@@ -505,7 +575,19 @@ function FantasyStats() {
             {filteredStats.length} stat{filteredStats.length !== 1 ? "s" : ""}
           </span>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Label className="text-sm font-bold text-muted-foreground">
+            From week:
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            max={18}
+            placeholder="1"
+            value={startWeek}
+            onChange={(e) => setStartWeek(e.target.value)}
+            className="h-8 w-20 text-sm"
+          />
           <DensityToggle />
         </div>
       </div>

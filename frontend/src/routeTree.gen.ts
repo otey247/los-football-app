@@ -17,6 +17,7 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-admin'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutReportingRouteImport } from './routes/_layout/reporting'
 import { Route as LayoutPlayerAnalyticsRouteImport } from './routes/_layout/player-analytics'
 import { Route as LayoutMatchupsRouteImport } from './routes/_layout/matchups'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
@@ -64,6 +65,11 @@ const LayoutSuperAdminRoute = LayoutSuperAdminRouteImport.update({
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutReportingRoute = LayoutReportingRouteImport.update({
+  id: '/reporting',
+  path: '/reporting',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutPlayerAnalyticsRoute = LayoutPlayerAnalyticsRouteImport.update({
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/items': typeof LayoutItemsRoute
   '/matchups': typeof LayoutMatchupsRoute
   '/player-analytics': typeof LayoutPlayerAnalyticsRoute
+  '/reporting': typeof LayoutReportingRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/blog/$postId': typeof LayoutBlogPostIdRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/items': typeof LayoutItemsRoute
   '/matchups': typeof LayoutMatchupsRoute
   '/player-analytics': typeof LayoutPlayerAnalyticsRoute
+  '/reporting': typeof LayoutReportingRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
   '/': typeof LayoutIndexRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/matchups': typeof LayoutMatchupsRoute
   '/_layout/player-analytics': typeof LayoutPlayerAnalyticsRoute
+  '/_layout/reporting': typeof LayoutReportingRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/super-admin': typeof LayoutSuperAdminRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/matchups'
     | '/player-analytics'
+    | '/reporting'
     | '/settings'
     | '/super-admin'
     | '/blog/$postId'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/matchups'
     | '/player-analytics'
+    | '/reporting'
     | '/settings'
     | '/super-admin'
     | '/'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/_layout/items'
     | '/_layout/matchups'
     | '/_layout/player-analytics'
+    | '/_layout/reporting'
     | '/_layout/settings'
     | '/_layout/super-admin'
     | '/_layout/'
@@ -290,6 +302,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof LayoutSettingsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/reporting': {
+      id: '/_layout/reporting'
+      path: '/reporting'
+      fullPath: '/reporting'
+      preLoaderRoute: typeof LayoutReportingRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/player-analytics': {
@@ -379,6 +398,7 @@ interface LayoutRouteChildren {
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutMatchupsRoute: typeof LayoutMatchupsRoute
   LayoutPlayerAnalyticsRoute: typeof LayoutPlayerAnalyticsRoute
+  LayoutReportingRoute: typeof LayoutReportingRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSuperAdminRoute: typeof LayoutSuperAdminRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -393,6 +413,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutMatchupsRoute: LayoutMatchupsRoute,
   LayoutPlayerAnalyticsRoute: LayoutPlayerAnalyticsRoute,
+  LayoutReportingRoute: LayoutReportingRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSuperAdminRoute: LayoutSuperAdminRoute,
   LayoutIndexRoute: LayoutIndexRoute,

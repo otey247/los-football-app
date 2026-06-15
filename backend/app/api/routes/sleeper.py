@@ -1,9 +1,12 @@
 """API routes for Sleeper fantasy football stats."""
 
+import csv
+import io
 from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 
 from app.core.config import settings
 from app.services import sleeper as svc
@@ -158,16 +161,7 @@ def get_league_info(
         _handle_sleeper_error(exc, lid)
 
 
-@router.get("/stats/{stat_key}")
-def get_stat(
-    stat_key: str,
-    league_id: str = Query(default=""),
-    week: int | None = Query(default=None, ge=1, le=18),
-) -> Any:
-    """
-    Calculate and return a specific stat.
-    stat_key must be one of the supported stats listed in /meta.
-    """
+def _resolve_stat(stat_key: str, league_id: str) -> tuple[Any, str]:
     fn = _STAT_FUNCTIONS.get(stat_key)
     if fn is None:
         raise HTTPException(status_code=404, detail=f"Unknown stat: {stat_key}")
@@ -177,10 +171,96 @@ def get_stat(
             status_code=400,
             detail="No league_id provided and SLEEPER_LEAGUE_ID is not configured",
         )
+    return fn, lid
+
+
+@router.get("/stats/{stat_key}")
+def get_stat(
+    stat_key: str,
+    league_id: str = Query(default=""),
+    week: int | None = Query(default=None, ge=1, le=18),
+    start_week: int | None = Query(default=None, ge=1, le=18),
+) -> Any:
+    """
+    Calculate and return a specific stat.
+
+    stat_key must be one of the supported stats listed in /meta. ``week`` is
+    the inclusive
+    end of the window; ``start_week`` optionally restricts analytics to a
+    custom week range (defaults to week 1 — the full season to date).
+    """
+    fn, lid = _resolve_stat(stat_key, league_id)
     current = _requested_week(lid, week)
     try:
-        return fn(lid, current)
+        with svc.week_window(start_week):
+            return fn(lid, current)
     except HTTPException:
         raise
     except Exception as exc:
         _handle_sleeper_error(exc, lid)
+
+
+def _flatten_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop nested/list columns so a stat payload exports cleanly to CSV."""
+    flat: list[dict[str, Any]] = []
+    for row in rows:
+        flat.append(
+            {k: v for k, v in row.items() if not isinstance(v, list | dict)}
+        )
+    return flat
+
+
+def _rows_to_csv(rows: list[dict[str, Any]]) -> str:
+    flat = _flatten_rows(rows)
+    if not flat:
+        return ""
+    # Stable, union-of-keys header so every row lines up.
+    fieldnames: list[str] = []
+    for row in flat:
+        for key in row:
+            if key not in fieldnames:
+                fieldnames.append(key)
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(flat)
+    return buffer.getvalue()
+
+
+@router.get("/stats/{stat_key}/export")
+def export_stat(
+    stat_key: str,
+    league_id: str = Query(default=""),
+    week: int | None = Query(default=None, ge=1, le=18),
+    start_week: int | None = Query(default=None, ge=1, le=18),
+    format: str = Query(default="csv", pattern="^(csv|json)$"),
+) -> Response:
+    """#75 Export any stat card/table as CSV or JSON for download."""
+    fn, lid = _resolve_stat(stat_key, league_id)
+    current = _requested_week(lid, week)
+    try:
+        with svc.week_window(start_week):
+            data = fn(lid, current)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _handle_sleeper_error(exc, lid)
+        raise  # unreachable; _handle_sleeper_error always raises
+
+    rows = data if isinstance(data, list) else [data]
+    filename = f"{stat_key}-week{current}"
+    if format == "json":
+        import json
+
+        return Response(
+            content=json.dumps(rows, indent=2),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}.json"'
+            },
+        )
+    return Response(
+        content=_rows_to_csv(rows),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
+    )

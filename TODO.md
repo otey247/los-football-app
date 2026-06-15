@@ -111,17 +111,17 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [x] 74. Transaction activity heatmap by manager (who's most active)
 
 ### 2.5 Data, Reporting & Instrumentation
-- [ ] 75. CSV / JSON export for every stat card and table
-- [ ] 76. Historical season archive with cross-season league records
-- [ ] 77. Custom date/week range filtering on all analytics
-- [ ] 78. Saved/scheduled reports emailed to the commissioner
-- [ ] 79. Product usage analytics (which cards/views users engage with most)
-- [ ] 80. A configurable scoring-settings reader so analytics respect each league's rules
-- [ ] 81. Multi-league aggregate dashboard for users in several leagues
-- [ ] 82. API rate-limit + cache analytics dashboard for the Sleeper integration
-- [ ] 83. Data-freshness/health monitor flagging stale or failed syncs
-- [ ] 84. Benchmarking of a team's metrics against league and historical averages
-- [ ] 85. Correlation explorer (e.g., does high bench-points predict losses?)
+- [x] 75. CSV / JSON export for every stat card and table
+- [x] 76. Historical season archive with cross-season league records
+- [x] 77. Custom date/week range filtering on all analytics
+- [x] 78. Saved/scheduled reports emailed to the commissioner
+- [x] 79. Product usage analytics (which cards/views users engage with most)
+- [x] 80. A configurable scoring-settings reader so analytics respect each league's rules
+- [x] 81. Multi-league aggregate dashboard for users in several leagues
+- [x] 82. API rate-limit + cache analytics dashboard for the Sleeper integration
+- [x] 83. Data-freshness/health monitor flagging stale or failed syncs
+- [x] 84. Benchmarking of a team's metrics against league and historical averages
+- [x] 85. Correlation explorer (e.g., does high bench-points predict losses?)
 
 ---
 

@@ -9,6 +9,7 @@ from app.api.routes import (
     player_analytics,
     private,
     recommendations,
+    reporting,
     sleeper,
     users,
     utils,
@@ -26,6 +27,7 @@ api_router.include_router(player_analytics.router)
 api_router.include_router(insights.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(matchup.router)
+api_router.include_router(reporting.router)
 
 
 if settings.ENVIRONMENT == "local":
