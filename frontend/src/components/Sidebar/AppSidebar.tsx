@@ -5,6 +5,7 @@ import {
   Home,
   ShieldCheck,
   Sparkles,
+  Target,
   Users,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: BarChart3, title: "Fantasy Stats", path: "/fantasy-stats" },
   { icon: Sparkles, title: "Insights", path: "/insights" },
+  { icon: Target, title: "Coach", path: "/coach" },
   { icon: BookOpen, title: "Blog", path: "/blog" },
   { icon: Briefcase, title: "Items", path: "/items" },
 ]

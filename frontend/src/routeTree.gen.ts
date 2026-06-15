@@ -20,6 +20,7 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutInsightsRouteImport } from './routes/_layout/insights'
 import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
+import { Route as LayoutCoachRouteImport } from './routes/_layout/coach'
 import { Route as LayoutBlogRouteImport } from './routes/_layout/blog'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutBlogPostIdRouteImport } from './routes/_layout/blog.$postId'
@@ -78,6 +79,11 @@ const LayoutFantasyStatsRoute = LayoutFantasyStatsRouteImport.update({
   path: '/fantasy-stats',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutCoachRoute = LayoutCoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutBlogRoute = LayoutBlogRouteImport.update({
   id: '/blog',
   path: '/blog',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
+  '/coach': typeof LayoutCoachRoute
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
+  '/coach': typeof LayoutCoachRoute
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/blog': typeof LayoutBlogRouteWithChildren
+  '/_layout/coach': typeof LayoutCoachRoute
   '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/_layout/insights': typeof LayoutInsightsRoute
   '/_layout/items': typeof LayoutItemsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/blog'
+    | '/coach'
     | '/fantasy-stats'
     | '/insights'
     | '/items'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/blog'
+    | '/coach'
     | '/fantasy-stats'
     | '/insights'
     | '/items'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/blog'
+    | '/_layout/coach'
     | '/_layout/fantasy-stats'
     | '/_layout/insights'
     | '/_layout/items'
@@ -277,6 +289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutFantasyStatsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/coach': {
+      id: '/_layout/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof LayoutCoachRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/blog': {
       id: '/_layout/blog'
       path: '/blog'
@@ -316,6 +335,7 @@ const LayoutBlogRouteWithChildren = LayoutBlogRoute._addFileChildren(
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutBlogRoute: typeof LayoutBlogRouteWithChildren
+  LayoutCoachRoute: typeof LayoutCoachRoute
   LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
   LayoutInsightsRoute: typeof LayoutInsightsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
@@ -327,6 +347,7 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutBlogRoute: LayoutBlogRouteWithChildren,
+  LayoutCoachRoute: LayoutCoachRoute,
   LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
   LayoutInsightsRoute: LayoutInsightsRoute,
   LayoutItemsRoute: LayoutItemsRoute,

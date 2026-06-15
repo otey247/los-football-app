@@ -136,19 +136,19 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [ ] 91. Auto-detected storylines (win streaks, rivalries, collapses) surfaced as cards
 
 ### 3.2 Actionable Recommendations
-- [ ] 92. Start/sit recommendations with confidence and projected point delta
-- [ ] 93. Waiver wire pickup suggestions ranked by need + opportunity
-- [ ] 94. Suggested trade targets tailored to each team's positional weaknesses
-- [ ] 95. Optimal-lineup nudges before lineup lock (push/email reminders)
+- [x] 92. Start/sit recommendations with confidence and projected point delta
+- [x] 93. Waiver wire pickup suggestions ranked by need + opportunity
+- [x] 94. Suggested trade targets tailored to each team's positional weaknesses
+- [x] 95. Optimal-lineup nudges before lineup lock (push/email reminders)
 
 ### 3.3 Predictive & Strategic Insights
-- [ ] 96. Rest-of-season outlook per team with key swing matchups highlighted
-- [ ] 97. "Must-win" game flags based on playoff-probability sensitivity
-- [ ] 98. Regression/luck warnings (teams overperforming vs underlying metrics)
+- [x] 96. Rest-of-season outlook per team with key swing matchups highlighted
+- [x] 97. "Must-win" game flags based on playoff-probability sensitivity
+- [x] 98. Regression/luck warnings (teams overperforming vs underlying metrics)
 
 ### 3.4 Social & Community Insights
-- [ ] 99. League trash-talk / rivalry index with auto-surfaced grudge matches
-- [ ] 100. Power-ranking committee mode: members vote, app blends with the model and shows disagreement
+- [x] 99. League trash-talk / rivalry index with auto-surfaced grudge matches
+- [x] 100. Power-ranking committee mode: members vote, app blends with the model and shows disagreement
 
 ---
 
