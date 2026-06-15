@@ -9,7 +9,7 @@ import {
   Trophy,
 } from "lucide-react"
 import { useState } from "react"
-
+import { StatChart } from "@/components/fantasy/StatCharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -159,17 +159,27 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
             </div>
           )}
           {data && Array.isArray(data) && data.length > 0 && (
-            <div className="divide-y divide-border/60">
-              {(data as Record<string, unknown>[])
-                .slice(0, 12)
-                .map((row, i) => (
-                  <StatRow
-                    key={(row.roster_id as string) ?? i}
-                    row={row}
-                    index={i}
+            <>
+              {meta.chart && (
+                <div className="mb-4">
+                  <StatChart
+                    chart={meta.chart}
+                    rows={data as Record<string, unknown>[]}
                   />
-                ))}
-            </div>
+                </div>
+              )}
+              <div className="divide-y divide-border/60">
+                {(data as Record<string, unknown>[])
+                  .slice(0, 12)
+                  .map((row, i) => (
+                    <StatRow
+                      key={(row.roster_id as string) ?? i}
+                      row={row}
+                      index={i}
+                    />
+                  ))}
+              </div>
+            </>
           )}
           {data && Array.isArray(data) && data.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">

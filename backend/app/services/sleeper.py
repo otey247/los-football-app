@@ -1389,3 +1389,607 @@ def stat_dynasty_legacy_score(
         })
     result.sort(key=lambda x: x["legacy_score"], reverse=True)
     return result
+
+
+# ---------------------------------------------------------------------------
+# 2.1 Team & League Performance (TODO #41–#50)
+# ---------------------------------------------------------------------------
+
+
+def _regular_season_end(league: dict[str, Any]) -> int:
+    """Last regular-season week (the week before playoffs begin)."""
+    settings = league.get("settings") or {}
+    playoff_start = int(settings.get("playoff_week_start", 15) or 15)
+    return max(1, playoff_start - 1)
+
+
+def _weekly_scores(tw: list[dict[str, Any]]) -> dict[int, dict[int, float]]:
+    """Map roster_id -> {week: points}."""
+    scores: dict[int, dict[int, float]] = {}
+    for row in tw:
+        scores.setdefault(row["roster_id"], {})[row["week"]] = row["points"]
+    return scores
+
+
+def _opponent_map(
+    tw: list[dict[str, Any]],
+) -> dict[int, dict[int, int]]:
+    """Map roster_id -> {week: opponent_roster_id} from paired matchups."""
+    by_week: dict[int, dict[int, list[dict[str, Any]]]] = {}
+    for row in tw:
+        mid = row["matchup_id"]
+        if mid is None:
+            continue
+        by_week.setdefault(row["week"], {}).setdefault(mid, []).append(row)
+    opponents: dict[int, dict[int, int]] = {}
+    for week, mid_map in by_week.items():
+        for pair in mid_map.values():
+            if len(pair) == 2:
+                a, b = pair[0]["roster_id"], pair[1]["roster_id"]
+                opponents.setdefault(a, {})[week] = b
+                opponents.setdefault(b, {})[week] = a
+    return opponents
+
+
+def _pstdev(values: list[float]) -> float:
+    """Population standard deviation (0.0 for fewer than 2 samples)."""
+    n = len(values)
+    if n < 2:
+        return 0.0
+    mean = sum(values) / n
+    variance = sum((v - mean) ** 2 for v in values) / n
+    return float(variance**0.5)
+
+
+def stat_power_ranking_trend(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#41 Power Ranking Trend – each team's rank movement week over week.
+
+    A weekly power score blends cumulative all-play win % (65%) with
+    normalized average points (35%), then teams are ranked each week so the
+    full trajectory can be drawn as a trend line.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    weeks = sorted(all_matchups.keys())
+
+    cum_ap_wins: dict[int, float] = dict.fromkeys(rum, 0.0)
+    cum_ap_games: dict[int, int] = dict.fromkeys(rum, 0)
+    cum_points: dict[int, float] = dict.fromkeys(rum, 0.0)
+    cum_games: dict[int, int] = dict.fromkeys(rum, 0)
+    series: dict[int, list[dict[str, Any]]] = {rid: [] for rid in rum}
+
+    for week in weeks:
+        scores = [
+            (r["roster_id"], r["points"]) for r in tw if r["week"] == week
+        ]
+        for rid, pts in scores:
+            cum_points[rid] += pts
+            cum_games[rid] += 1
+            for opp_rid, opp_pts in scores:
+                if opp_rid == rid:
+                    continue
+                cum_ap_games[rid] += 1
+                if pts > opp_pts:
+                    cum_ap_wins[rid] += 1.0
+                elif pts == opp_pts:
+                    cum_ap_wins[rid] += 0.5
+
+        max_avg = max(
+            (cum_points[rid] / cum_games[rid] for rid in rum if cum_games[rid]),
+            default=1.0,
+        ) or 1.0
+        power: dict[int, float] = {}
+        for rid in rum:
+            ap_pct = (
+                cum_ap_wins[rid] / cum_ap_games[rid] if cum_ap_games[rid] else 0.0
+            )
+            avg_pts = cum_points[rid] / cum_games[rid] if cum_games[rid] else 0.0
+            power[rid] = 0.65 * ap_pct + 0.35 * (avg_pts / max_avg)
+
+        ranking = sorted(rum, key=lambda r: power[r], reverse=True)
+        for rank, rid in enumerate(ranking, start=1):
+            series[rid].append(
+                {"week": week, "rank": rank, "power_score": round(power[rid], 4)}
+            )
+
+    result = []
+    for rid in rum:
+        user = rum.get(rid, {})
+        team_series = series[rid]
+        current_rank = team_series[-1]["rank"] if team_series else 0
+        previous_rank = (
+            team_series[-2]["rank"] if len(team_series) >= 2 else current_rank
+        )
+        result.append({
+            "roster_id": rid,
+            "current_rank": current_rank,
+            "previous_rank": previous_rank,
+            "rank_delta": previous_rank - current_rank,
+            "power_score": team_series[-1]["power_score"] if team_series else 0.0,
+            "series": team_series,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["current_rank"] or 999)
+    return result
+
+
+def stat_expected_vs_actual_wins(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#42 Expected Wins vs Actual Wins – luck-adjusted record per team.
+
+    Expected wins come from each week's scoring rank; the gap versus the
+    real win total is the team's luck.
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    n_teams = len(rosters)
+
+    actual_wins: dict[int, int] = {r["roster_id"]: 0 for r in rosters}
+    actual_losses: dict[int, int] = {r["roster_id"]: 0 for r in rosters}
+    expected: dict[int, float] = {r["roster_id"]: 0.0 for r in rosters}
+    games: dict[int, int] = {r["roster_id"]: 0 for r in rosters}
+
+    for week in all_matchups:
+        week_rows = [r for r in tw if r["week"] == week]
+        for rank, row in enumerate(sorted(week_rows, key=lambda x: x["points"])):
+            expected[row["roster_id"]] += rank / max(n_teams - 1, 1)
+        for row in week_rows:
+            games[row["roster_id"]] += 1
+            res = _resolve_result(
+                row["roster_id"], row["matchup_id"], row["points"], week_rows
+            )
+            if res == "W":
+                actual_wins[row["roster_id"]] += 1
+            elif res == "L":
+                actual_losses[row["roster_id"]] += 1
+
+    result = []
+    for rid in actual_wins:
+        user = rum.get(rid, {})
+        exp_w = round(expected[rid], 2)
+        exp_l = round(games[rid] - expected[rid], 2)
+        result.append({
+            "roster_id": rid,
+            "actual_wins": actual_wins[rid],
+            "actual_losses": actual_losses[rid],
+            "expected_wins": exp_w,
+            "expected_losses": exp_l,
+            "luck_delta": round(actual_wins[rid] - expected[rid], 2),
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["luck_delta"], reverse=True)
+    return result
+
+
+def stat_points_for_against(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#43 Points For / Points Against – scatter data with quadrant labels.
+
+    Each team is placed relative to the league median for points scored and
+    points allowed, yielding four quadrants (Contender, Unlucky, Lucky,
+    Rebuilding).
+    """
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    opponents = _opponent_map(tw)
+    weekly = _weekly_scores(tw)
+
+    points_for: dict[int, float] = {r["roster_id"]: 0.0 for r in rosters}
+    points_against: dict[int, float] = {r["roster_id"]: 0.0 for r in rosters}
+    games: dict[int, int] = {r["roster_id"]: 0 for r in rosters}
+    for rid, week_pts in weekly.items():
+        for week, pts in week_pts.items():
+            points_for[rid] = points_for.get(rid, 0.0) + pts
+            games[rid] = games.get(rid, 0) + 1
+            opp = opponents.get(rid, {}).get(week)
+            if opp is not None:
+                points_against[rid] = points_against.get(rid, 0.0) + weekly.get(
+                    opp, {}
+                ).get(week, 0.0)
+
+    pf_values = sorted(points_for.values())
+    pa_values = sorted(points_against.values())
+
+    def _median(vals: list[float]) -> float:
+        if not vals:
+            return 0.0
+        mid = len(vals) // 2
+        if len(vals) % 2:
+            return vals[mid]
+        return (vals[mid - 1] + vals[mid]) / 2
+
+    median_pf = round(_median(pf_values), 2)
+    median_pa = round(_median(pa_values), 2)
+
+    result = []
+    for rid in points_for:
+        user = rum.get(rid, {})
+        pf = points_for[rid]
+        pa = points_against[rid]
+        high_pf = pf >= median_pf
+        low_pa = pa <= median_pa
+        if high_pf and low_pa:
+            quadrant = "Contender"
+        elif high_pf and not low_pa:
+            quadrant = "Unlucky"
+        elif not high_pf and low_pa:
+            quadrant = "Lucky"
+        else:
+            quadrant = "Rebuilding"
+        result.append({
+            "roster_id": rid,
+            "points_for": round(pf, 2),
+            "points_against": round(pa, 2),
+            "avg_for": round(pf / games[rid], 2) if games[rid] else 0.0,
+            "avg_against": round(pa / games[rid], 2) if games[rid] else 0.0,
+            "quadrant": quadrant,
+            "median_for": median_pf,
+            "median_against": median_pa,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["points_for"], reverse=True)
+    return result
+
+
+def stat_strength_of_schedule(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#44 Strength of Schedule – past and remaining difficulty per team.
+
+    Difficulty is the average season scoring rate of the opponents a team has
+    faced (past) and is scheduled to face (remaining).
+    """
+    league = get_league(league_id)
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    weekly = _weekly_scores(tw)
+    past_opponents = _opponent_map(tw)
+
+    # Season scoring rate per team (points per game so far).
+    team_avg: dict[int, float] = {}
+    for rid in rum:
+        pts = list(weekly.get(rid, {}).values())
+        team_avg[rid] = sum(pts) / len(pts) if pts else 0.0
+
+    # Remaining schedule: scheduled matchups from next week to season end.
+    season_end = _regular_season_end(league)
+    future: dict[int, list[int]] = {rid: [] for rid in rum}
+    for week in range(current_week + 1, season_end + 1):
+        try:
+            week_matchups = get_matchups(league_id, week)
+        except httpx.HTTPError:
+            continue
+        mid_map: dict[int, list[int]] = {}
+        for m in week_matchups:
+            if m.get("roster_id") is None or m.get("matchup_id") is None:
+                continue
+            mid_map.setdefault(int(m["matchup_id"]), []).append(int(m["roster_id"]))
+        for pair in mid_map.values():
+            if len(pair) == 2:
+                future.setdefault(pair[0], []).append(pair[1])
+                future.setdefault(pair[1], []).append(pair[0])
+
+    result = []
+    for rid in rum:
+        user = rum.get(rid, {})
+        past_opps = list(past_opponents.get(rid, {}).values())
+        past_vals = [team_avg.get(o, 0.0) for o in past_opps]
+        future_opps = future.get(rid, [])
+        future_vals = [team_avg.get(o, 0.0) for o in future_opps]
+        all_vals = past_vals + future_vals
+        result.append({
+            "roster_id": rid,
+            "past_sos": round(sum(past_vals) / len(past_vals), 2)
+            if past_vals
+            else 0.0,
+            "remaining_sos": round(sum(future_vals) / len(future_vals), 2)
+            if future_vals
+            else 0.0,
+            "full_sos": round(sum(all_vals) / len(all_vals), 2)
+            if all_vals
+            else 0.0,
+            "games_remaining": len(future_opps),
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["remaining_sos"], reverse=True)
+    return result
+
+
+def stat_consistency_score(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#45 Consistency / Volatility – standard deviation of weekly scores."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    weekly = _weekly_scores(tw)
+
+    result = []
+    for rid in rum:
+        user = rum.get(rid, {})
+        scores = list(weekly.get(rid, {}).values())
+        avg = sum(scores) / len(scores) if scores else 0.0
+        std = _pstdev(scores)
+        cv = round(std / avg * 100, 1) if avg else 0.0
+        result.append({
+            "roster_id": rid,
+            "avg_score": round(avg, 2),
+            "std_dev": round(std, 2),
+            "coefficient_of_variation": cv,
+            "floor": round(min(scores), 2) if scores else 0.0,
+            "ceiling": round(max(scores), 2) if scores else 0.0,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    # Most consistent first (lowest volatility).
+    result.sort(key=lambda x: x["std_dev"])
+    return result
+
+
+def stat_all_play_standings(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#46 All-Play Standings – record vs every team each week, with win %."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+
+    wins: dict[int, int] = dict.fromkeys(rum, 0)
+    losses: dict[int, int] = dict.fromkeys(rum, 0)
+    ties: dict[int, int] = dict.fromkeys(rum, 0)
+    for week in all_matchups:
+        scores = [
+            (r["roster_id"], r["points"]) for r in tw if r["week"] == week
+        ]
+        for rid, pts in scores:
+            for opp_rid, opp_pts in scores:
+                if opp_rid == rid:
+                    continue
+                if pts > opp_pts:
+                    wins[rid] += 1
+                elif pts < opp_pts:
+                    losses[rid] += 1
+                else:
+                    ties[rid] += 1
+
+    result = []
+    for rid in rum:
+        user = rum.get(rid, {})
+        total = wins[rid] + losses[rid] + ties[rid]
+        win_pct = round((wins[rid] + 0.5 * ties[rid]) / total * 100, 1) if total else 0.0
+        result.append({
+            "roster_id": rid,
+            "all_play_wins": wins[rid],
+            "all_play_losses": losses[rid],
+            "all_play_ties": ties[rid],
+            "win_pct": win_pct,
+            "record": f"{wins[rid]}-{losses[rid]}-{ties[rid]}",
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["win_pct"], reverse=True)
+    return result
+
+
+def stat_roster_efficiency(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#47 Roster Efficiency – actual vs optimal lineup points, per week."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+
+    by_roster: dict[int, dict[str, Any]] = {
+        rid: {"actual": 0.0, "optimal": 0.0, "series": []} for rid in rum
+    }
+    for row in sorted(tw, key=lambda r: (r["roster_id"], r["week"])):
+        rid = row["roster_id"]
+        if rid not in by_roster:
+            continue
+        actual = row["points"]
+        optimal = _optimal_score(
+            row["starters"], row["players"], row["players_points"]
+        )
+        eff = round(actual / optimal * 100, 1) if optimal > 0 else 0.0
+        by_roster[rid]["actual"] += actual
+        by_roster[rid]["optimal"] += optimal
+        by_roster[rid]["series"].append({
+            "week": row["week"],
+            "actual": round(actual, 2),
+            "optimal": round(optimal, 2),
+            "efficiency": eff,
+        })
+
+    result = []
+    for rid, d in by_roster.items():
+        user = rum.get(rid, {})
+        efficiency = (
+            round(d["actual"] / d["optimal"] * 100, 1) if d["optimal"] > 0 else 0.0
+        )
+        result.append({
+            "roster_id": rid,
+            "efficiency_pct": efficiency,
+            "total_actual_points": round(d["actual"], 2),
+            "total_optimal_points": round(d["optimal"], 2),
+            "series": d["series"],
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["efficiency_pct"], reverse=True)
+    return result
+
+
+def stat_bench_points_ranking(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#48 Bench Points Left on the Table – ranked across the league."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+
+    by_roster: dict[int, dict[str, Any]] = {
+        rid: {"total": 0.0, "series": [], "worst_week": None, "worst": 0.0}
+        for rid in rum
+    }
+    for row in sorted(tw, key=lambda r: (r["roster_id"], r["week"])):
+        rid = row["roster_id"]
+        if rid not in by_roster:
+            continue
+        optimal = _optimal_score(
+            row["starters"], row["players"], row["players_points"]
+        )
+        lost = max(0.0, optimal - row["points"])
+        by_roster[rid]["total"] += lost
+        by_roster[rid]["series"].append(
+            {"week": row["week"], "bench_points": round(lost, 2)}
+        )
+        if lost > by_roster[rid]["worst"]:
+            by_roster[rid]["worst"] = lost
+            by_roster[rid]["worst_week"] = row["week"]
+
+    result = []
+    for rid, d in by_roster.items():
+        user = rum.get(rid, {})
+        n_weeks = len(d["series"])
+        result.append({
+            "roster_id": rid,
+            "total_bench_points": round(d["total"], 2),
+            "avg_bench_points": round(d["total"] / n_weeks, 2) if n_weeks else 0.0,
+            "worst_week": d["worst_week"],
+            "worst_week_points": round(d["worst"], 2),
+            "series": d["series"],
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["total_bench_points"], reverse=True)
+    return result
+
+
+def stat_margin_of_victory(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#49 Margin of Victory – blowout vs nailbiter distribution per team.
+
+    A blowout is a margin of 40+ points; a nailbiter is a margin of 5 or
+    fewer points.
+    """
+    blowout_threshold = 40.0
+    nailbiter_threshold = 5.0
+
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    weekly = _weekly_scores(tw)
+    opponents = _opponent_map(tw)
+
+    by_roster: dict[int, dict[str, Any]] = {
+        rid: {
+            "margins": [],
+            "biggest_win": 0.0,
+            "worst_loss": 0.0,
+            "blowout_wins": 0,
+            "blowout_losses": 0,
+            "nailbiters": 0,
+        }
+        for rid in rum
+    }
+    for rid, week_pts in weekly.items():
+        if rid not in by_roster:
+            continue
+        for week, pts in week_pts.items():
+            opp = opponents.get(rid, {}).get(week)
+            if opp is None:
+                continue
+            margin = pts - weekly.get(opp, {}).get(week, 0.0)
+            by_roster[rid]["margins"].append(round(margin, 2))
+            if margin > by_roster[rid]["biggest_win"]:
+                by_roster[rid]["biggest_win"] = margin
+            if margin < by_roster[rid]["worst_loss"]:
+                by_roster[rid]["worst_loss"] = margin
+            if abs(margin) <= nailbiter_threshold:
+                by_roster[rid]["nailbiters"] += 1
+            elif margin >= blowout_threshold:
+                by_roster[rid]["blowout_wins"] += 1
+            elif margin <= -blowout_threshold:
+                by_roster[rid]["blowout_losses"] += 1
+
+    result = []
+    for rid, d in by_roster.items():
+        user = rum.get(rid, {})
+        margins = d["margins"]
+        avg_margin = round(sum(margins) / len(margins), 2) if margins else 0.0
+        result.append({
+            "roster_id": rid,
+            "avg_margin": avg_margin,
+            "biggest_win": round(d["biggest_win"], 2),
+            "worst_loss": round(d["worst_loss"], 2),
+            "blowout_wins": d["blowout_wins"],
+            "blowout_losses": d["blowout_losses"],
+            "nailbiters": d["nailbiters"],
+            "margins": margins,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["avg_margin"], reverse=True)
+    return result
+
+
+def stat_cumulative_points_race(
+    league_id: str, current_week: int
+) -> list[dict[str, Any]]:
+    """#50 Cumulative Points Race – running points total over the season."""
+    all_matchups = _collect_all_matchups(league_id, current_week)
+    tw = _team_week_table(all_matchups)
+    rosters = get_rosters(league_id)
+    users = get_users(league_id)
+    rum = _roster_user_map(rosters, users)
+    weekly = _weekly_scores(tw)
+    weeks = sorted(all_matchups.keys())
+
+    result = []
+    for rid in rum:
+        user = rum.get(rid, {})
+        running = 0.0
+        series: list[dict[str, Any]] = []
+        for week in weeks:
+            running += weekly.get(rid, {}).get(week, 0.0)
+            series.append({"week": week, "cumulative_points": round(running, 2)})
+        result.append({
+            "roster_id": rid,
+            "total_points": round(running, 2),
+            "series": series,
+            "display_name": user.get("display_name", f"Team {rid}"),
+            "avatar": user.get("avatar"),
+        })
+    result.sort(key=lambda x: x["total_points"], reverse=True)
+    return result
