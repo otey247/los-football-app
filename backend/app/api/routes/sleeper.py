@@ -39,6 +39,15 @@ _STAT_FUNCTIONS = {
     "trade-regret-tracker": svc.stat_trade_regret_tracker,
     "playoff-odds": svc.stat_playoff_odds,
     "dynasty-legacy-score": svc.stat_dynasty_legacy_score,
+    # 2.4 Transactions: Waivers, Trades & Draft
+    "waiver-spend-efficiency": svc.stat_waiver_spend_efficiency,
+    "waiver-pickup-leaderboard": svc.stat_waiver_pickup_leaderboard,
+    "trade-fairness": svc.stat_trade_fairness,
+    "trade-impact-tracker": svc.stat_trade_impact_tracker,
+    "draft-grade": svc.stat_draft_grade,
+    "draft-reach-steal": svc.stat_draft_reach_steal,
+    "keeper-dynasty-value": svc.stat_keeper_dynasty_value,
+    "transaction-activity": svc.stat_transaction_activity,
 }
 
 STAT_META = [
@@ -67,6 +76,14 @@ STAT_META = [
     {"key": "trade-regret-tracker", "title": "Trade Regret Tracker", "description": "Flags trades where one side clearly lost value.", "category": "Trade Analysis"},
     {"key": "playoff-odds", "title": "Playoff Odds Simulator", "description": "Monte Carlo simulation of remaining season and playoff chances.", "category": "Playoff"},
     {"key": "dynasty-legacy-score", "title": "Dynasty Legacy Score", "description": "Season composite score combining wins, points, playoffs, efficiency, and transactions.", "category": "Playoff"},
+    {"key": "waiver-spend-efficiency", "title": "Waiver Spend Efficiency", "description": "FAAB dollars spent versus fantasy points gained from waiver and free-agent claims.", "category": "Waivers"},
+    {"key": "waiver-pickup-leaderboard", "title": "Best & Worst Waiver Pickups", "description": "Season leaderboard of individual waiver/free-agent adds ranked by points produced after the add.", "category": "Waivers"},
+    {"key": "trade-fairness", "title": "Trade Fairness Evaluator", "description": "Balances each completed trade by the rest-of-season production each side received.", "category": "Trade Analysis"},
+    {"key": "trade-impact-tracker", "title": "Trade Impact Tracker", "description": "How a completed trade has aged for both sides, with the net winner so far.", "category": "Trade Analysis"},
+    {"key": "draft-grade", "title": "Draft Grade", "description": "Letter grade per team from drafted production versus expected draft-slot value.", "category": "Draft Analysis"},
+    {"key": "draft-reach-steal", "title": "Positional Runs & Reach/Steal", "description": "Counts each team's draft steals, reaches, and picks made inside a positional run.", "category": "Draft Analysis"},
+    {"key": "keeper-dynasty-value", "title": "Keeper/Dynasty Asset Value", "description": "Multi-year roster valuation weighting current production against an age-based value curve.", "category": "Draft Analysis"},
+    {"key": "transaction-activity", "title": "Transaction Activity Heatmap", "description": "Per-manager move counts across trades, waivers, and free agents, with a weekly breakdown.", "category": "Waivers"},
 ]
 
 
@@ -96,7 +113,7 @@ def _handle_sleeper_error(exc: Exception, league_id: str = "") -> None:
 
 @router.get("/meta")
 def get_stats_meta() -> list[dict[str, str]]:
-    """Return metadata (key, title, description, category) for all 25 stats."""
+    """Return metadata (key, title, description, category) for all stats."""
     return STAT_META
 
 
@@ -146,7 +163,8 @@ def get_stat(
     """
     Calculate and return a specific stat.
 
-    stat_key must be one of the 25 supported stats. ``week`` is the inclusive
+    stat_key must be one of the supported stats listed in /meta. ``week`` is
+    the inclusive
     end of the window; ``start_week`` optionally restricts analytics to a
     custom week range (defaults to week 1 — the full season to date).
     """

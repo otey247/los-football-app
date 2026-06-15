@@ -272,6 +272,44 @@ class UsageSummary(SQLModel):
     rows: list[UsageSummaryRow]
 
 
+# ---------------------------------------------------------------------------
+# Power-ranking committee vote (#100)
+# ---------------------------------------------------------------------------
+
+
+class PowerRankingVote(SQLModel, table=True):
+    """One voter's ranking of one team for a league/week ballot.
+
+    A full ballot is a set of rows sharing (league_id, week, voter_id); each row
+    gives a roster's 1-based rank (1 = strongest). Re-submitting a ballot
+    replaces the voter's prior rows for that league/week.
+    """
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    league_id: str = Field(max_length=64, index=True)
+    week: int = Field(index=True)
+    voter_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    roster_id: int
+    rank: int
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class CommitteeBallotItem(SQLModel):
+    roster_id: int
+    rank: int
+
+
+class CommitteeBallot(SQLModel):
+    league_id: str = ""
+    week: int | None = None
+    rankings: list[CommitteeBallotItem]
+
+
 # Generic message
 class Message(SQLModel):
     message: str
