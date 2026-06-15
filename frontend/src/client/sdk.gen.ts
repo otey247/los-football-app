@@ -3,7 +3,311 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BlogReadBlogPostsData, BlogReadBlogPostsResponse, BlogCreateBlogPostData, BlogCreateBlogPostResponse, BlogReadAllBlogPostsData, BlogReadAllBlogPostsResponse, BlogReadBlogPostData, BlogReadBlogPostResponse, BlogUpdateBlogPostData, BlogUpdateBlogPostResponse, BlogDeleteBlogPostData, BlogDeleteBlogPostResponse, InsightsGetInsightsMetaResponse, InsightsGetWeeklyRecapData, InsightsGetWeeklyRecapResponse, InsightsPublishWeeklyRecapData, InsightsPublishWeeklyRecapResponse, InsightsGetMatchupPreviewsData, InsightsGetMatchupPreviewsResponse, InsightsGetWeeklyAwardsData, InsightsGetWeeklyAwardsResponse, InsightsGetSeasonYearbookData, InsightsGetSeasonYearbookResponse, InsightsGetStorylinesData, InsightsGetStorylinesResponse, InsightsAskTheLeagueData, InsightsAskTheLeagueResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SleeperGetStatsMetaResponse, SleeperGetLeagueInfoData, SleeperGetLeagueInfoResponse, SleeperGetStatData, SleeperGetStatResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class BlogService {
+    /**
+     * Read Blog Posts
+     * Retrieve published blog posts.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns BlogPostList Successful Response
+     * @throws ApiError
+     */
+    public static readBlogPosts(data: BlogReadBlogPostsData = {}): CancelablePromise<BlogReadBlogPostsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/blog/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Blog Post
+     * Create a new blog post (super admin only).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BlogPostPublic Successful Response
+     * @throws ApiError
+     */
+    public static createBlogPost(data: BlogCreateBlogPostData): CancelablePromise<BlogCreateBlogPostResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/blog/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read All Blog Posts
+     * Admin-only: list all blog posts regardless of published status.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns BlogPostsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readAllBlogPosts(data: BlogReadAllBlogPostsData = {}): CancelablePromise<BlogReadAllBlogPostsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/blog/admin',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Blog Post
+     * Get a single blog post by ID.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns BlogPostPublic Successful Response
+     * @throws ApiError
+     */
+    public static readBlogPost(data: BlogReadBlogPostData): CancelablePromise<BlogReadBlogPostResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/blog/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Blog Post
+     * Update a blog post (super admin only).
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns BlogPostPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateBlogPost(data: BlogUpdateBlogPostData): CancelablePromise<BlogUpdateBlogPostResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/blog/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Blog Post
+     * Delete a blog post (super admin only).
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteBlogPost(data: BlogDeleteBlogPostData): CancelablePromise<BlogDeleteBlogPostResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/blog/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class InsightsService {
+    /**
+     * Get Insights Meta
+     * Describe the available insight features and whether AI is enabled.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getInsightsMeta(): CancelablePromise<InsightsGetInsightsMetaResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/meta'
+        });
+    }
+    
+    /**
+     * Get Weekly Recap
+     * #86 Weekly recap — facts + AI-written narrative.
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getWeeklyRecap(data: InsightsGetWeeklyRecapData = {}): CancelablePromise<InsightsGetWeeklyRecapResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/weekly-recap',
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Publish Weekly Recap
+     * #86 Auto-draft the weekly recap into the commissioner blog (super admin).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static publishWeeklyRecap(data: InsightsPublishWeeklyRecapData): CancelablePromise<InsightsPublishWeeklyRecapResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/insights/weekly-recap/publish',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Matchup Previews
+     * #87 Matchup previews for the upcoming week.
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getMatchupPreviews(data: InsightsGetMatchupPreviewsData = {}): CancelablePromise<InsightsGetMatchupPreviewsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/matchup-previews',
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Weekly Awards
+     * #88 Manager of the Week & weekly superlatives.
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getWeeklyAwards(data: InsightsGetWeeklyAwardsData = {}): CancelablePromise<InsightsGetWeeklyAwardsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/weekly-awards',
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Season Yearbook
+     * #89 Season-in-review yearbook with milestones.
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSeasonYearbook(data: InsightsGetSeasonYearbookData = {}): CancelablePromise<InsightsGetSeasonYearbookResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/season-yearbook',
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Storylines
+     * #91 Auto-detected storylines (streaks, surges, collapses, rivalries).
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getStorylines(data: InsightsGetStorylinesData = {}): CancelablePromise<InsightsGetStorylinesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/insights/storylines',
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Ask The League
+     * #90 Natural-language Q&A grounded in league data.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static askTheLeague(data: InsightsAskTheLeagueData): CancelablePromise<InsightsAskTheLeagueResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/insights/ask',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class ItemsService {
     /**
@@ -228,6 +532,70 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SleeperService {
+    /**
+     * Get Stats Meta
+     * Return metadata (key, title, description, category) for all 25 stats.
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static getStatsMeta(): CancelablePromise<SleeperGetStatsMetaResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sleeper/meta'
+        });
+    }
+    
+    /**
+     * Get League Info
+     * Return basic league information from Sleeper.
+     * @param data The data for the request.
+     * @param data.leagueId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getLeagueInfo(data: SleeperGetLeagueInfoData = {}): CancelablePromise<SleeperGetLeagueInfoResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sleeper/league-info',
+            query: {
+                league_id: data.leagueId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Stat
+     * Calculate and return a specific stat.
+     * stat_key must be one of the 25 supported stats.
+     * @param data The data for the request.
+     * @param data.statKey
+     * @param data.leagueId
+     * @param data.week
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getStat(data: SleeperGetStatData): CancelablePromise<SleeperGetStatResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sleeper/stats/{stat_key}',
+            path: {
+                stat_key: data.statKey
+            },
+            query: {
+                league_id: data.leagueId,
+                week: data.week
+            },
             errors: {
                 422: 'Validation Error'
             }
