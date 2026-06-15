@@ -13,14 +13,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 ## 1. UI / UX (40)
 
 ### 1.1 Navigation & Information Architecture
-- [ ] 1. Add a persistent global league switcher in the top nav so users can hop between leagues without reloading
-- [ ] 2. Introduce a command palette (⌘K / Ctrl+K) for jumping to any team, player, week, or stat card
-- [ ] 3. Build breadcrumb navigation across league → team → player drill-down paths
-- [ ] 4. Add a "Favorites" / pinned stat cards rail so users can curate their default dashboard view
-- [ ] 5. Create a mobile-first bottom tab bar (Home, Stats, Matchups, Blog, Profile)
-- [ ] 6. Add a week selector slider with "current week" snap and live-week highlighting
-- [ ] 7. Provide a collapsible/expandable sidebar with remembered state per user
-- [ ] 8. Add deep-linkable URLs for every stat card + week + league combination for easy sharing
+- [x] 1. Add a persistent global league switcher in the top nav so users can hop between leagues without reloading
+- [x] 2. Introduce a command palette (⌘K / Ctrl+K) for jumping to any team, player, week, or stat card
+- [x] 3. Build breadcrumb navigation across league → team → player drill-down paths
+- [x] 4. Add a "Favorites" / pinned stat cards rail so users can curate their default dashboard view
+- [x] 5. Create a mobile-first bottom tab bar (Home, Stats, Matchups, Blog, Profile)
+- [x] 6. Add a week selector slider with "current week" snap and live-week highlighting
+- [x] 7. Provide a collapsible/expandable sidebar with remembered state per user
+- [x] 8. Add deep-linkable URLs for every stat card + week + league combination for easy sharing
 
 ### 1.2 Visual Design & Theming
 - [ ] 9. Add team-color theming that adapts card accents to each franchise's primary color
