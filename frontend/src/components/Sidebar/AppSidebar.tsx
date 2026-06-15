@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  UsersRound,
 } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
@@ -23,6 +24,7 @@ import { User } from "./User"
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: BarChart3, title: "Fantasy Stats", path: "/fantasy-stats" },
+  { icon: UsersRound, title: "Player Analytics", path: "/player-analytics" },
   { icon: Sparkles, title: "Insights", path: "/insights" },
   { icon: BookOpen, title: "Blog", path: "/blog" },
   { icon: Briefcase, title: "Items", path: "/items" },

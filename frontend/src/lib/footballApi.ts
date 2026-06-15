@@ -114,6 +114,37 @@ export const SleeperService = {
   },
 }
 
+// ---- Player Analytics API --------------------------------------------------
+
+export interface PlayerStatMeta {
+  key: string
+  title: string
+  description: string
+  category: string
+}
+
+export const PlayerAnalyticsService = {
+  async getStatsMeta(): Promise<PlayerStatMeta[]> {
+    const res = await axios.get(`${getBaseUrl()}/api/v1/player-analytics/meta`)
+    return res.data
+  },
+
+  async getStat(
+    statKey: string,
+    leagueId?: string,
+    week?: number,
+  ): Promise<unknown[]> {
+    const params: Record<string, string | number> = {}
+    if (leagueId) params.league_id = leagueId
+    if (week) params.week = week
+    const res = await axios.get(
+      `${getBaseUrl()}/api/v1/player-analytics/stats/${statKey}`,
+      { params },
+    )
+    return res.data
+  },
+}
+
 // ---- Insights API ----------------------------------------------------------
 
 export interface InsightsMeta {

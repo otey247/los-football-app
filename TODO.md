@@ -81,14 +81,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [ ] 50. Cumulative points race line chart over the full season
 
 ### 2.2 Player Analytics
-- [ ] 51. Player consistency vs boom/bust classification (floor/ceiling chart)
-- [ ] 52. Positional scoring breakdown per team (QB/RB/WR/TE/FLEX contribution)
-- [ ] 53. Target share, snap share, and usage trends pulled from Sleeper player stats
-- [ ] 54. Points-above-replacement (VOR/VORP) by position
-- [ ] 55. Buy-low / sell-high candidate flags based on recent vs expected production
-- [ ] 56. Injury status timeline and games-missed impact per roster
-- [ ] 57. Rookie / breakout watch with usage acceleration metrics
-- [ ] 58. Streaming value tracker for DST/K/QB matchup-based plays
+- [x] 51. Player consistency vs boom/bust classification (floor/ceiling chart)
+- [x] 52. Positional scoring breakdown per team (QB/RB/WR/TE/FLEX contribution)
+- [x] 53. Target share, snap share, and usage trends pulled from Sleeper player stats
+- [x] 54. Points-above-replacement (VOR/VORP) by position
+- [x] 55. Buy-low / sell-high candidate flags based on recent vs expected production
+- [x] 56. Injury status timeline and games-missed impact per roster
+- [x] 57. Rookie / breakout watch with usage acceleration metrics
+- [x] 58. Streaming value tracker for DST/K/QB matchup-based plays
 
 ### 2.3 Matchup & Win Probability
 - [ ] 59. Pre-game win probability model for each weekly matchup
@@ -101,14 +101,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [ ] 66. Championship odds and projected bracket paths
 
 ### 2.4 Transactions: Waivers, Trades & Draft
-- [ ] 67. Waiver wire spend efficiency (FAAB spent vs points gained)
-- [ ] 68. Best/worst waiver pickups of the season leaderboard
-- [ ] 69. Trade fairness/value evaluator using rest-of-season projections
-- [ ] 70. Trade impact tracker (how a completed trade aged for both sides)
-- [ ] 71. Draft pick value vs actual production (draft grade by round/pick)
-- [ ] 72. Positional run detection and draft "reach/steal" analysis
-- [ ] 73. Keeper/dynasty asset valuation with multi-year value curves
-- [ ] 74. Transaction activity heatmap by manager (who's most active)
+- [x] 67. Waiver wire spend efficiency (FAAB spent vs points gained)
+- [x] 68. Best/worst waiver pickups of the season leaderboard
+- [x] 69. Trade fairness/value evaluator using rest-of-season projections
+- [x] 70. Trade impact tracker (how a completed trade aged for both sides)
+- [x] 71. Draft pick value vs actual production (draft grade by round/pick)
+- [x] 72. Positional run detection and draft "reach/steal" analysis
+- [x] 73. Keeper/dynasty asset valuation with multi-year value curves
+- [x] 74. Transaction activity heatmap by manager (who's most active)
 
 ### 2.5 Data, Reporting & Instrumentation
 - [ ] 75. CSV / JSON export for every stat card and table
