@@ -81,14 +81,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [ ] 50. Cumulative points race line chart over the full season
 
 ### 2.2 Player Analytics
-- [ ] 51. Player consistency vs boom/bust classification (floor/ceiling chart)
-- [ ] 52. Positional scoring breakdown per team (QB/RB/WR/TE/FLEX contribution)
-- [ ] 53. Target share, snap share, and usage trends pulled from Sleeper player stats
-- [ ] 54. Points-above-replacement (VOR/VORP) by position
-- [ ] 55. Buy-low / sell-high candidate flags based on recent vs expected production
-- [ ] 56. Injury status timeline and games-missed impact per roster
-- [ ] 57. Rookie / breakout watch with usage acceleration metrics
-- [ ] 58. Streaming value tracker for DST/K/QB matchup-based plays
+- [x] 51. Player consistency vs boom/bust classification (floor/ceiling chart)
+- [x] 52. Positional scoring breakdown per team (QB/RB/WR/TE/FLEX contribution)
+- [x] 53. Target share, snap share, and usage trends pulled from Sleeper player stats
+- [x] 54. Points-above-replacement (VOR/VORP) by position
+- [x] 55. Buy-low / sell-high candidate flags based on recent vs expected production
+- [x] 56. Injury status timeline and games-missed impact per roster
+- [x] 57. Rookie / breakout watch with usage acceleration metrics
+- [x] 58. Streaming value tracker for DST/K/QB matchup-based plays
 
 ### 2.3 Matchup & Win Probability
 - [ ] 59. Pre-game win probability model for each weekly matchup
