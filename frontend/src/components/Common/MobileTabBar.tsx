@@ -18,7 +18,6 @@ interface Tab {
   match: string[]
 }
 
-// Matchups maps to Insights, which surfaces matchup previews and storylines.
 const TABS: Tab[] = [
   { label: "Home", to: "/", icon: Home, match: ["/"] },
   {
@@ -27,7 +26,7 @@ const TABS: Tab[] = [
     icon: BarChart3,
     match: ["/fantasy-stats"],
   },
-  { label: "Matchups", to: "/insights", icon: Swords, match: ["/insights"] },
+  { label: "Matchups", to: "/matchups", icon: Swords, match: ["/matchups"] },
   { label: "Blog", to: "/blog", icon: BookOpen, match: ["/blog"] },
   { label: "Profile", to: "/settings", icon: User, match: ["/settings"] },
 ]

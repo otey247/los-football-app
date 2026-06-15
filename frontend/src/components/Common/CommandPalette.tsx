@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Swords,
   Trophy,
   Users,
 } from "lucide-react"
@@ -84,6 +85,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         group: "Navigation",
         icon: BarChart3,
         perform: go("/fantasy-stats"),
+      },
+      {
+        id: "nav-matchups",
+        label: "Matchups & Win Probability",
+        group: "Navigation",
+        icon: Swords,
+        perform: go("/matchups"),
       },
       {
         id: "nav-insights",
