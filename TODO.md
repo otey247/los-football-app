@@ -23,13 +23,13 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [x] 8. Add deep-linkable URLs for every stat card + week + league combination for easy sharing
 
 ### 1.2 Visual Design & Theming
-- [ ] 9. Add team-color theming that adapts card accents to each franchise's primary color
-- [ ] 10. Build a polished dark/light/system theme toggle with smooth transitions
-- [ ] 11. Add team avatar/logo upload and display throughout standings and matchup views
-- [ ] 12. Create animated number counters for points, ranks, and win probabilities
-- [ ] 13. Add skeleton loaders for every stat card while Sleeper data is fetched
-- [ ] 14. Design empty-state illustrations for pre-season / no-data scenarios
-- [ ] 15. Add a "compact" vs "comfortable" density toggle for data-heavy tables
+- [x] 9. Add team-color theming that adapts card accents to each franchise's primary color
+- [x] 10. Build a polished dark/light/system theme toggle with smooth transitions
+- [x] 11. Add team avatar/logo upload and display throughout standings and matchup views
+- [x] 12. Create animated number counters for points, ranks, and win probabilities
+- [x] 13. Add skeleton loaders for every stat card while Sleeper data is fetched
+- [x] 14. Design empty-state illustrations for pre-season / no-data scenarios
+- [x] 15. Add a "compact" vs "comfortable" density toggle for data-heavy tables
 
 ### 1.3 Interactivity & Engagement
 - [ ] 16. Add interactive, hoverable charts (tooltips, crosshairs, legend toggling)
@@ -69,16 +69,16 @@ Each item is an actionable, independently shippable enhancement. Check items off
 ## 2. Analytics (35)
 
 ### 2.1 Team & League Performance
-- [ ] 41. Power ranking trend lines showing each team's rank movement week over week
-- [ ] 42. Expected wins vs actual wins (luck-adjusted record) per team
-- [ ] 43. Points-for / points-against scatter plot with quadrant labeling
-- [ ] 44. Strength-of-schedule index (past and remaining) per team
-- [ ] 45. Consistency/volatility score (standard deviation of weekly scores)
-- [ ] 46. "All-play" record (record vs every team each week) standings
-- [ ] 47. Roster efficiency: points scored vs optimal lineup points, per week
-- [ ] 48. Bench points left on the table, ranked across the league
-- [ ] 49. Margin-of-victory and blowout/nailbiter distribution charts
-- [ ] 50. Cumulative points race line chart over the full season
+- [x] 41. Power ranking trend lines showing each team's rank movement week over week
+- [x] 42. Expected wins vs actual wins (luck-adjusted record) per team
+- [x] 43. Points-for / points-against scatter plot with quadrant labeling
+- [x] 44. Strength-of-schedule index (past and remaining) per team
+- [x] 45. Consistency/volatility score (standard deviation of weekly scores)
+- [x] 46. "All-play" record (record vs every team each week) standings
+- [x] 47. Roster efficiency: points scored vs optimal lineup points, per week
+- [x] 48. Bench points left on the table, ranked across the league
+- [x] 49. Margin-of-victory and blowout/nailbiter distribution charts
+- [x] 50. Cumulative points race line chart over the full season
 
 ### 2.2 Player Analytics
 - [x] 51. Player consistency vs boom/bust classification (floor/ceiling chart)
@@ -91,14 +91,14 @@ Each item is an actionable, independently shippable enhancement. Check items off
 - [x] 58. Streaming value tracker for DST/K/QB matchup-based plays
 
 ### 2.3 Matchup & Win Probability
-- [ ] 59. Pre-game win probability model for each weekly matchup
-- [ ] 60. Live in-game win probability that updates as scores come in
-- [ ] 61. Projected vs actual score accuracy tracking over the season
-- [ ] 62. Matchup "what-if" simulator (swap a starter, see projected delta)
-- [ ] 63. Tiebreaker and clinch/elimination scenario calculator
-- [ ] 64. Monte Carlo season simulation for projected final standings
-- [ ] 65. Playoff probability % per team, updated weekly
-- [ ] 66. Championship odds and projected bracket paths
+- [x] 59. Pre-game win probability model for each weekly matchup
+- [x] 60. Live in-game win probability that updates as scores come in
+- [x] 61. Projected vs actual score accuracy tracking over the season
+- [x] 62. Matchup "what-if" simulator (swap a starter, see projected delta)
+- [x] 63. Tiebreaker and clinch/elimination scenario calculator
+- [x] 64. Monte Carlo season simulation for projected final standings
+- [x] 65. Playoff probability % per team, updated weekly
+- [x] 66. Championship odds and projected bracket paths
 
 ### 2.4 Transactions: Waivers, Trades & Draft
 - [x] 67. Waiver wire spend efficiency (FAAB spent vs points gained)

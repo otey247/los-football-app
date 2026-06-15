@@ -19,6 +19,7 @@ import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-adm
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutReportingRouteImport } from './routes/_layout/reporting'
 import { Route as LayoutPlayerAnalyticsRouteImport } from './routes/_layout/player-analytics'
+import { Route as LayoutMatchupsRouteImport } from './routes/_layout/matchups'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutInsightsRouteImport } from './routes/_layout/insights'
 import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
@@ -76,6 +77,11 @@ const LayoutPlayerAnalyticsRoute = LayoutPlayerAnalyticsRouteImport.update({
   path: '/player-analytics',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutMatchupsRoute = LayoutMatchupsRouteImport.update({
+  id: '/matchups',
+  path: '/matchups',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
+  '/matchups': typeof LayoutMatchupsRoute
   '/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/reporting': typeof LayoutReportingRoute
   '/settings': typeof LayoutSettingsRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
+  '/matchups': typeof LayoutMatchupsRoute
   '/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/reporting': typeof LayoutReportingRoute
   '/settings': typeof LayoutSettingsRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
   '/_layout/insights': typeof LayoutInsightsRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/matchups': typeof LayoutMatchupsRoute
   '/_layout/player-analytics': typeof LayoutPlayerAnalyticsRoute
   '/_layout/reporting': typeof LayoutReportingRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/fantasy-stats'
     | '/insights'
     | '/items'
+    | '/matchups'
     | '/player-analytics'
     | '/reporting'
     | '/settings'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/fantasy-stats'
     | '/insights'
     | '/items'
+    | '/matchups'
     | '/player-analytics'
     | '/reporting'
     | '/settings'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/_layout/fantasy-stats'
     | '/_layout/insights'
     | '/_layout/items'
+    | '/_layout/matchups'
     | '/_layout/player-analytics'
     | '/_layout/reporting'
     | '/_layout/settings'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPlayerAnalyticsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/matchups': {
+      id: '/_layout/matchups'
+      path: '/matchups'
+      fullPath: '/matchups'
+      preLoaderRoute: typeof LayoutMatchupsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
@@ -377,6 +396,7 @@ interface LayoutRouteChildren {
   LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
   LayoutInsightsRoute: typeof LayoutInsightsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutMatchupsRoute: typeof LayoutMatchupsRoute
   LayoutPlayerAnalyticsRoute: typeof LayoutPlayerAnalyticsRoute
   LayoutReportingRoute: typeof LayoutReportingRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -391,6 +411,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
   LayoutInsightsRoute: LayoutInsightsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutMatchupsRoute: LayoutMatchupsRoute,
   LayoutPlayerAnalyticsRoute: LayoutPlayerAnalyticsRoute,
   LayoutReportingRoute: LayoutReportingRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,

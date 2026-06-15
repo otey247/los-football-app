@@ -5,6 +5,7 @@ from app.api.routes import (
     insights,
     items,
     login,
+    matchup,
     player_analytics,
     private,
     recommendations,
@@ -25,6 +26,7 @@ api_router.include_router(sleeper.router)
 api_router.include_router(player_analytics.router)
 api_router.include_router(insights.router)
 api_router.include_router(recommendations.router)
+api_router.include_router(matchup.router)
 api_router.include_router(reporting.router)
 
 
