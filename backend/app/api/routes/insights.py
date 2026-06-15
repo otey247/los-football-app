@@ -43,12 +43,36 @@ def get_insights_meta() -> dict[str, Any]:
     return {
         "ai_enabled": nar.ai_enabled(),
         "features": [
-            {"key": "weekly-recap", "title": "Weekly Recap", "description": "AI-written recap of the week's results, publishable to the blog."},
-            {"key": "matchup-previews", "title": "Matchup Previews", "description": "Storyline-driven previews of the upcoming week's matchups."},
-            {"key": "weekly-awards", "title": "Weekly Awards", "description": "Manager of the Week and other weekly superlatives with blurbs."},
-            {"key": "season-yearbook", "title": "Season Yearbook", "description": "Season-in-review with records and milestones."},
-            {"key": "storylines", "title": "Storylines", "description": "Auto-detected streaks, surges, collapses, and rivalries."},
-            {"key": "ask", "title": "Ask the League", "description": "Natural-language Q&A grounded in your league data."},
+            {
+                "key": "weekly-recap",
+                "title": "Weekly Recap",
+                "description": "AI-written recap of the week's results, publishable to the blog.",
+            },
+            {
+                "key": "matchup-previews",
+                "title": "Matchup Previews",
+                "description": "Storyline-driven previews of the upcoming week's matchups.",
+            },
+            {
+                "key": "weekly-awards",
+                "title": "Weekly Awards",
+                "description": "Manager of the Week and other weekly superlatives with blurbs.",
+            },
+            {
+                "key": "season-yearbook",
+                "title": "Season Yearbook",
+                "description": "Season-in-review with records and milestones.",
+            },
+            {
+                "key": "storylines",
+                "title": "Storylines",
+                "description": "Auto-detected streaks, surges, collapses, and rivalries.",
+            },
+            {
+                "key": "ask",
+                "title": "Ask the League",
+                "description": "Natural-language Q&A grounded in your league data.",
+            },
         ],
     }
 
@@ -63,10 +87,12 @@ def get_weekly_recap(
     wk = _requested_week(lid, week)
     try:
         facts = nar.weekly_recap_facts(lid, wk)
+        narrative, generated = nar.weekly_recap_narrative(facts)
         return {
             "week": wk,
             "ai_enabled": nar.ai_enabled(),
-            "narrative": nar.weekly_recap_narrative(facts),
+            "ai_generated": generated,
+            "narrative": narrative,
             "facts": facts,
         }
     except HTTPException:
@@ -95,7 +121,7 @@ def publish_weekly_recap(
     wk = _requested_week(lid, body.week)
     try:
         facts = nar.weekly_recap_facts(lid, wk)
-        narrative_text = nar.weekly_recap_narrative(facts)
+        narrative_text, _ = nar.weekly_recap_narrative(facts)
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
@@ -151,10 +177,12 @@ def get_matchup_previews(
     wk = week if week is not None else min(current + 1, 18)
     try:
         facts = nar.matchup_preview_facts(lid, wk)
+        narrative, generated = nar.matchup_preview_narrative(facts)
         return {
             "week": wk,
             "ai_enabled": nar.ai_enabled(),
-            "narrative": nar.matchup_preview_narrative(facts),
+            "ai_generated": generated,
+            "narrative": narrative,
             "facts": facts,
         }
     except HTTPException:
@@ -173,10 +201,12 @@ def get_weekly_awards(
     wk = _requested_week(lid, week)
     try:
         awards = nar.weekly_awards_facts(lid, wk)
+        narrative, generated = nar.weekly_awards_narrative(wk, awards)
         return {
             "week": wk,
             "ai_enabled": nar.ai_enabled(),
-            "narrative": nar.weekly_awards_narrative(wk, awards),
+            "ai_generated": generated,
+            "narrative": narrative,
             "awards": awards,
         }
     except HTTPException:
@@ -195,10 +225,12 @@ def get_season_yearbook(
     wk = _requested_week(lid, week)
     try:
         facts = nar.season_yearbook_facts(lid, wk)
+        narrative, generated = nar.season_yearbook_narrative(facts)
         return {
             "through_week": wk,
             "ai_enabled": nar.ai_enabled(),
-            "narrative": nar.season_yearbook_narrative(facts),
+            "ai_generated": generated,
+            "narrative": narrative,
             "facts": facts,
         }
     except HTTPException:

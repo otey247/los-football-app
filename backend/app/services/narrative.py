@@ -30,12 +30,15 @@ _ANSWER_MAX_TOKENS = 1024
 # Claude text generation (with graceful template fallback)
 # ---------------------------------------------------------------------------
 
+
 def ai_enabled() -> bool:
     """Whether Claude-backed narratives are available."""
     return settings.ai_insights_enabled
 
 
-def _generate_text(system: str, prompt: str, max_tokens: int = _NARRATIVE_MAX_TOKENS) -> str | None:
+def _generate_text(
+    system: str, prompt: str, max_tokens: int = _NARRATIVE_MAX_TOKENS
+) -> str | None:
     """Generate prose with Claude. Returns ``None`` when AI is unavailable.
 
     The import is lazy and wrapped in a broad ``except`` so a missing package,
@@ -54,9 +57,12 @@ def _generate_text(system: str, prompt: str, max_tokens: int = _NARRATIVE_MAX_TO
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
-        return "".join(
-            block.text for block in response.content if block.type == "text"
-        ).strip()
+        parts = [
+            getattr(block, "text", "")
+            for block in response.content
+            if getattr(block, "type", None) == "text"
+        ]
+        return "".join(parts).strip()
     except Exception as exc:  # noqa: BLE001 - degrade gracefully on any failure
         logger.warning("Claude narrative generation failed, using template: %s", exc)
         return None
@@ -66,9 +72,9 @@ _RECAP_SYSTEM = (
     "You are the commissioner and resident hype-writer for a fantasy football "
     "league. You write punchy, funny, slightly trash-talky recaps and previews "
     "that name managers by their team name. Keep it vivid but grounded in the "
-    "numbers you are given — never invent stats. Use short paragraphs. Do not "
-    "use markdown headers; write flowing prose with the occasional bold team "
-    "name."
+    "numbers you are given — never invent stats. Use short paragraphs. Write in "
+    "plain text only: no markdown, no headers, and no formatting markers such "
+    "as ** or _ (the output is rendered as plain text)."
 )
 
 _QA_SYSTEM = (
@@ -82,6 +88,7 @@ _QA_SYSTEM = (
 # ---------------------------------------------------------------------------
 # Shared league context
 # ---------------------------------------------------------------------------
+
 
 def _name(rum: dict[int, dict[str, Any]], rid: int) -> str:
     user = rum.get(rid, {})
@@ -124,9 +131,7 @@ def _matchup_pairs(
     return pairs
 
 
-def _standings(
-    league_id: str, through_week: int
-) -> dict[int, dict[str, Any]]:
+def _standings(league_id: str, through_week: int) -> dict[int, dict[str, Any]]:
     """Wins / losses / points-for per roster through ``through_week``."""
     all_matchups = svc._collect_all_matchups(league_id, through_week)
     tw = svc._team_week_table(all_matchups)
@@ -199,7 +204,9 @@ def _team_results(
                         rid, row["matchup_id"], row["points"], week_rows
                     ),
                     "opponent": _name(rum, opponent["roster_id"]) if opponent else None,
-                    "opponent_points": round(opponent["points"], 2) if opponent else None,
+                    "opponent_points": round(opponent["points"], 2)
+                    if opponent
+                    else None,
                 }
             )
     return results, rum
@@ -208,6 +215,7 @@ def _team_results(
 # ---------------------------------------------------------------------------
 # Feature data builders (deterministic facts)
 # ---------------------------------------------------------------------------
+
 
 def weekly_recap_facts(league_id: str, week: int) -> dict[str, Any]:
     """#86 facts: every result, plus the week's superlative games."""
@@ -218,7 +226,10 @@ def weekly_recap_facts(league_id: str, week: int) -> dict[str, Any]:
     pairs = _matchup_pairs(week_matchups, rum)
 
     scores: list[dict[str, Any]] = [
-        {"name": _name(rum, int(m["roster_id"])), "points": round(float(m.get("points") or 0), 2)}
+        {
+            "name": _name(rum, int(m["roster_id"])),
+            "points": round(float(m.get("points") or 0), 2),
+        }
         for m in week_matchups
         if m.get("roster_id") is not None
     ]
@@ -246,18 +257,25 @@ def matchup_preview_facts(league_id: str, week: int) -> dict[str, Any]:
     rum = svc._roster_user_map(rosters, users)
     week_matchups = svc.get_matchups(league_id, week)
 
-    standings = _standings(league_id, max(week - 1, 1))
-    results, _ = _team_results(league_id, max(week - 1, 1))
+    # Form is built only from *completed* weeks. For a Week 1 preview this is
+    # week 0 (no games played yet) so teams correctly show 0-0 form.
+    prev_week = max(week - 1, 0)
+    standings = _standings(league_id, prev_week)
+    results, _ = _team_results(league_id, prev_week)
 
     def team_form(rid: int) -> dict[str, Any]:
         st = standings.get(rid, {})
         history = results.get(rid, [])
         played = [h for h in history if h["result"] in ("W", "L", "T")]
-        avg = round(sum(h["points"] for h in played) / len(played), 2) if played else 0.0
+        avg = (
+            round(sum(h["points"] for h in played) / len(played), 2) if played else 0.0
+        )
         last3 = "".join(h["result"] for h in history[-3:]) or "—"
+        wins, losses, ties = st.get("wins", 0), st.get("losses", 0), st.get("ties", 0)
+        record = f"{wins}-{losses}-{ties}" if ties else f"{wins}-{losses}"
         return {
             "name": _name(rum, rid),
-            "record": f"{st.get('wins', 0)}-{st.get('losses', 0)}",
+            "record": record,
             "avg_points": avg,
             "last3": last3,
         }
@@ -293,7 +311,9 @@ def weekly_awards_facts(league_id: str, week: int) -> list[dict[str, Any]]:
         rid = int(m["roster_id"])
         actual = float(m.get("points") or 0)
         optimal = svc._optimal_score(
-            m.get("starters") or [], m.get("players") or [], m.get("players_points") or {}
+            m.get("starters") or [],
+            m.get("players") or [],
+            m.get("players_points") or {},
         )
         gap = round(max(0.0, optimal - actual), 2)
         if worst_bench is None or gap > worst_bench["points"]:
@@ -366,9 +386,19 @@ def season_yearbook_facts(league_id: str, through_week: int) -> dict[str, Any]:
     for rid, history in results.items():
         for h in history:
             if best_game is None or h["points"] > best_game["points"]:
-                best_game = {"name": _name(rum, rid), "week": h["week"], "points": h["points"]}
-            if h["points"] > 0 and (worst_game is None or h["points"] < worst_game["points"]):
-                worst_game = {"name": _name(rum, rid), "week": h["week"], "points": h["points"]}
+                best_game = {
+                    "name": _name(rum, rid),
+                    "week": h["week"],
+                    "points": h["points"],
+                }
+            if h["points"] > 0 and (
+                worst_game is None or h["points"] < worst_game["points"]
+            ):
+                worst_game = {
+                    "name": _name(rum, rid),
+                    "week": h["week"],
+                    "points": h["points"],
+                }
         # longest win streak
         streak = best = 0
         for h in history:
@@ -377,7 +407,9 @@ def season_yearbook_facts(league_id: str, through_week: int) -> dict[str, Any]:
         if best and (longest_streak is None or best > longest_streak["streak"]):
             longest_streak = {"name": _name(rum, rid), "streak": best}
 
-    points_leader = max(table, key=lambda x: x["points_for"], default=None) if table else None
+    points_leader = (
+        max(table, key=lambda x: x["points_for"], default=None) if table else None
+    )
 
     return {
         "through_week": through_week,
@@ -497,7 +529,9 @@ def storylines_facts(league_id: str, through_week: int) -> list[dict[str, Any]]:
 # Narrative renderers (Claude with template fallback)
 # ---------------------------------------------------------------------------
 
-def weekly_recap_narrative(facts: dict[str, Any]) -> str:
+
+def weekly_recap_narrative(facts: dict[str, Any]) -> tuple[str, bool]:
+    """Return (narrative, generated_by_ai)."""
     prompt = (
         f"Write a Week {facts['week']} fantasy football recap for the league. "
         "Open with the headline result, cover the standout performances, and "
@@ -506,12 +540,14 @@ def weekly_recap_narrative(facts: dict[str, Any]) -> str:
     )
     text = _generate_text(_RECAP_SYSTEM, prompt)
     if text:
-        return text
+        return text, True
 
     lines = [f"Week {facts['week']} is in the books. Here's how it shook out."]
     for m in facts["matchups"]:
         if m["tie"]:
-            lines.append(f"{m['winner']} and {m['loser']} fought to a {m['winner_points']} tie.")
+            lines.append(
+                f"{m['winner']} and {m['loser']} fought to a {m['winner_points']} tie."
+            )
         else:
             lines.append(
                 f"{m['winner']} beat {m['loser']}, {m['winner_points']}–{m['loser_points']}."
@@ -531,10 +567,11 @@ def weekly_recap_narrative(facts: dict[str, Any]) -> str:
         lines.append(
             f"The nail-biter: {c['winner']} edged {c['loser']} by just {c['margin']}."
         )
-    return "\n".join(lines)
+    return "\n".join(lines), False
 
 
-def matchup_preview_narrative(facts: dict[str, Any]) -> str:
+def matchup_preview_narrative(facts: dict[str, Any]) -> tuple[str, bool]:
+    """Return (narrative, generated_by_ai)."""
     prompt = (
         f"Write punchy previews for the Week {facts['week']} matchups. One short "
         "paragraph per game, highlighting form and the key storyline. Facts as "
@@ -542,7 +579,7 @@ def matchup_preview_narrative(facts: dict[str, Any]) -> str:
     )
     text = _generate_text(_RECAP_SYSTEM, prompt)
     if text:
-        return text
+        return text, True
 
     lines = [f"Looking ahead to Week {facts['week']}:"]
     for m in facts["matchups"]:
@@ -551,12 +588,15 @@ def matchup_preview_narrative(facts: dict[str, Any]) -> str:
             f"\n{h['name']} ({h['record']}, {h['avg_points']} ppg, last 3: {h['last3']}) "
             f"vs {a['name']} ({a['record']}, {a['avg_points']} ppg, last 3: {a['last3']})."
         )
-    return "\n".join(lines)
+    return "\n".join(lines), False
 
 
-def weekly_awards_narrative(week: int, awards: list[dict[str, Any]]) -> str:
+def weekly_awards_narrative(
+    week: int, awards: list[dict[str, Any]]
+) -> tuple[str, bool]:
+    """Return (narrative, generated_by_ai)."""
     if not awards:
-        return f"No awards to hand out for Week {week} yet."
+        return f"No awards to hand out for Week {week} yet.", False
     prompt = (
         f"Write a short, funny Week {week} awards blurb (one sentence per award) "
         "based on these winners. Facts as JSON:\n\n"
@@ -564,13 +604,17 @@ def weekly_awards_narrative(week: int, awards: list[dict[str, Any]]) -> str:
     )
     text = _generate_text(_RECAP_SYSTEM, prompt, max_tokens=800)
     if text:
-        return text
-    return "\n".join(
-        f"{a['emoji']} {a['award']}: {a['team']} — {a['detail']}." for a in awards
+        return text, True
+    return (
+        "\n".join(
+            f"{a['emoji']} {a['award']}: {a['team']} — {a['detail']}." for a in awards
+        ),
+        False,
     )
 
 
-def season_yearbook_narrative(facts: dict[str, Any]) -> str:
+def season_yearbook_narrative(facts: dict[str, Any]) -> tuple[str, bool]:
+    """Return (narrative, generated_by_ai)."""
     prompt = (
         "Write a season-in-review 'yearbook' summary for the league through "
         f"Week {facts['through_week']}: celebrate the leader, the records, and "
@@ -579,7 +623,7 @@ def season_yearbook_narrative(facts: dict[str, Any]) -> str:
     )
     text = _generate_text(_RECAP_SYSTEM, prompt)
     if text:
-        return text
+        return text, True
 
     lines = [f"The league through Week {facts['through_week']}:"]
     if facts["leader"]:
@@ -594,11 +638,13 @@ def season_yearbook_narrative(facts: dict[str, Any]) -> str:
         )
     if facts["best_game"]:
         g = facts["best_game"]
-        lines.append(f"Best single game: {g['name']} dropped {g['points']} in Week {g['week']}.")
+        lines.append(
+            f"Best single game: {g['name']} dropped {g['points']} in Week {g['week']}."
+        )
     if facts["longest_win_streak"]:
         s = facts["longest_win_streak"]
         lines.append(f"Longest win streak: {s['name']} at {s['streak']} games.")
-    return "\n".join(lines)
+    return "\n".join(lines), False
 
 
 def answer_question(league_id: str, through_week: int, question: str) -> dict[str, Any]:
@@ -618,14 +664,16 @@ def answer_question(league_id: str, through_week: int, question: str) -> dict[st
                 "recaps, and storylines tabs for the data."
             ),
             "ai_enabled": False,
+            "ai_generated": False,
         }
     prompt = (
-        f"League data (JSON):\n{json.dumps(context, indent=2)}\n\n"
-        f"Question: {question}"
+        f"League data (JSON):\n{json.dumps(context, indent=2)}\n\nQuestion: {question}"
     )
     text = _generate_text(_QA_SYSTEM, prompt, max_tokens=_ANSWER_MAX_TOKENS)
     return {
         "question": question,
         "answer": text or "I couldn't generate an answer right now. Try again shortly.",
         "ai_enabled": True,
+        # True only when Claude actually produced this answer (not a fallback).
+        "ai_generated": text is not None,
     }

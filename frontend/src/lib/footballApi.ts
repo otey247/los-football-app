@@ -132,6 +132,8 @@ export interface NarrativeResponse {
   week?: number
   through_week?: number
   ai_enabled: boolean
+  // True only when Claude actually generated this narrative (not a fallback).
+  ai_generated: boolean
   narrative: string
   facts?: Record<string, unknown>
   awards?: WeeklyAward[]
@@ -149,6 +151,7 @@ export interface AskResponse {
   question: string
   answer: string
   ai_enabled: boolean
+  ai_generated: boolean
 }
 
 export interface PublishRecapResponse {

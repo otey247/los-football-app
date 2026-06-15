@@ -67,11 +67,14 @@ function ErrorState({ message }: { message?: string }) {
   )
 }
 
-function AiBadge({ enabled }: { enabled: boolean }) {
+function AiBadge({ generated }: { generated: boolean }) {
   return (
-    <Badge variant={enabled ? "default" : "secondary"} className="text-[11px]">
+    <Badge
+      variant={generated ? "default" : "secondary"}
+      className="text-[11px]"
+    >
       <Sparkles className="mr-1 h-3 w-3" />
-      {enabled ? "AI-written" : "Auto-generated"}
+      {generated ? "AI-written" : "Auto-generated"}
     </Badge>
   )
 }
@@ -106,7 +109,7 @@ function WeeklyRecapTab({ leagueId }: { leagueId: string }) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-black">Week {data.week} Recap</h3>
-          <AiBadge enabled={data.ai_enabled} />
+          <AiBadge generated={data.ai_generated} />
         </div>
         {user?.is_superuser && (
           <div className="flex gap-2">
@@ -151,7 +154,7 @@ function MatchupPreviewsTab({ leagueId }: { leagueId: string }) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <h3 className="text-lg font-black">Week {data.week} Previews</h3>
-        <AiBadge enabled={data.ai_enabled} />
+        <AiBadge generated={data.ai_generated} />
       </div>
       <NarrativeBlock text={data.narrative} />
     </div>
@@ -172,7 +175,7 @@ function WeeklyAwardsTab({ leagueId }: { leagueId: string }) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <h3 className="text-lg font-black">Week {data.week} Awards</h3>
-        <AiBadge enabled={data.ai_enabled} />
+        <AiBadge generated={data.ai_generated} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {(data.awards ?? []).map((a) => (
@@ -212,7 +215,7 @@ function YearbookTab({ leagueId }: { leagueId: string }) {
         <h3 className="text-lg font-black">
           Season Yearbook · Through Week {data.through_week}
         </h3>
-        <AiBadge enabled={data.ai_enabled} />
+        <AiBadge generated={data.ai_generated} />
       </div>
       <NarrativeBlock text={data.narrative} />
     </div>
@@ -309,7 +312,11 @@ function AskTab({ leagueId }: { leagueId: string }) {
             }}
           />
         </div>
-        <Button onClick={submit} disabled={ask.isPending || !question.trim()}>
+        <Button
+          onClick={submit}
+          disabled={ask.isPending || !question.trim()}
+          aria-label="Send question"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>
@@ -354,7 +361,7 @@ function Insights() {
         {meta && (
           <Badge variant={meta.ai_enabled ? "default" : "secondary"}>
             <Sparkles className="mr-1 h-3 w-3" />
-            {meta.ai_enabled ? "Claude AI enabled" : "Template mode"}
+            {meta.ai_enabled ? "Claude AI available" : "Template mode"}
           </Badge>
         )}
       </div>
