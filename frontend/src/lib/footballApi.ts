@@ -8,6 +8,8 @@ export interface SleeperStatMeta {
   title: string
   description: string
   category: string
+  /** Optional visualization hint for chart-style stat cards. */
+  chart?: string
 }
 
 export interface SleeperLeagueInfo {

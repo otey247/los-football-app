@@ -13,6 +13,7 @@ import {
 } from "@/components/Common/StatCardSkeleton"
 import { TeamAvatar } from "@/components/Common/TeamAvatar"
 import { WeekSelector } from "@/components/Common/WeekSelector"
+import { StatChart } from "@/components/fantasy/StatCharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -268,17 +269,27 @@ function StatCard({
             />
           )}
           {data && Array.isArray(data) && data.length > 0 && (
-            <div className="divide-y divide-border/60">
-              {(data as Record<string, unknown>[])
-                .slice(0, 12)
-                .map((row, i) => (
-                  <StatRow
-                    key={`${(row.roster_id as string) ?? (row.player_id as string) ?? "row"}-${i}`}
-                    row={row}
-                    index={i}
+            <>
+              {meta.chart && (
+                <div className="mb-4">
+                  <StatChart
+                    chart={meta.chart}
+                    rows={data as Record<string, unknown>[]}
                   />
-                ))}
-            </div>
+                </div>
+              )}
+              <div className="divide-y divide-border/60">
+                {(data as Record<string, unknown>[])
+                  .slice(0, 12)
+                  .map((row, i) => (
+                    <StatRow
+                      key={`${(row.roster_id as string) ?? (row.player_id as string) ?? "row"}-${i}`}
+                      row={row}
+                      index={i}
+                    />
+                  ))}
+              </div>
+            </>
           )}
           {data && Array.isArray(data) && data.length === 0 && (
             <EmptyState

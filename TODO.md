@@ -69,16 +69,16 @@ Each item is an actionable, independently shippable enhancement. Check items off
 ## 2. Analytics (35)
 
 ### 2.1 Team & League Performance
-- [ ] 41. Power ranking trend lines showing each team's rank movement week over week
-- [ ] 42. Expected wins vs actual wins (luck-adjusted record) per team
-- [ ] 43. Points-for / points-against scatter plot with quadrant labeling
-- [ ] 44. Strength-of-schedule index (past and remaining) per team
-- [ ] 45. Consistency/volatility score (standard deviation of weekly scores)
-- [ ] 46. "All-play" record (record vs every team each week) standings
-- [ ] 47. Roster efficiency: points scored vs optimal lineup points, per week
-- [ ] 48. Bench points left on the table, ranked across the league
-- [ ] 49. Margin-of-victory and blowout/nailbiter distribution charts
-- [ ] 50. Cumulative points race line chart over the full season
+- [x] 41. Power ranking trend lines showing each team's rank movement week over week
+- [x] 42. Expected wins vs actual wins (luck-adjusted record) per team
+- [x] 43. Points-for / points-against scatter plot with quadrant labeling
+- [x] 44. Strength-of-schedule index (past and remaining) per team
+- [x] 45. Consistency/volatility score (standard deviation of weekly scores)
+- [x] 46. "All-play" record (record vs every team each week) standings
+- [x] 47. Roster efficiency: points scored vs optimal lineup points, per week
+- [x] 48. Bench points left on the table, ranked across the league
+- [x] 49. Margin-of-victory and blowout/nailbiter distribution charts
+- [x] 50. Cumulative points race line chart over the full season
 
 ### 2.2 Player Analytics
 - [x] 51. Player consistency vs boom/bust classification (floor/ceiling chart)

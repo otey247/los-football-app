@@ -36,6 +36,17 @@ _STAT_FUNCTIONS = {
     "trade-regret-tracker": svc.stat_trade_regret_tracker,
     "playoff-odds": svc.stat_playoff_odds,
     "dynasty-legacy-score": svc.stat_dynasty_legacy_score,
+    # 2.1 Team & League Performance
+    "power-ranking-trend": svc.stat_power_ranking_trend,
+    "expected-vs-actual-wins": svc.stat_expected_vs_actual_wins,
+    "points-for-against": svc.stat_points_for_against,
+    "strength-of-schedule": svc.stat_strength_of_schedule,
+    "consistency-score": svc.stat_consistency_score,
+    "all-play-standings": svc.stat_all_play_standings,
+    "roster-efficiency": svc.stat_roster_efficiency,
+    "bench-points-ranking": svc.stat_bench_points_ranking,
+    "margin-of-victory": svc.stat_margin_of_victory,
+    "cumulative-points-race": svc.stat_cumulative_points_race,
     # 2.4 Transactions: Waivers, Trades & Draft
     "waiver-spend-efficiency": svc.stat_waiver_spend_efficiency,
     "waiver-pickup-leaderboard": svc.stat_waiver_pickup_leaderboard,
@@ -73,6 +84,16 @@ STAT_META = [
     {"key": "trade-regret-tracker", "title": "Trade Regret Tracker", "description": "Flags trades where one side clearly lost value.", "category": "Trade Analysis"},
     {"key": "playoff-odds", "title": "Playoff Odds Simulator", "description": "Monte Carlo simulation of remaining season and playoff chances.", "category": "Playoff"},
     {"key": "dynasty-legacy-score", "title": "Dynasty Legacy Score", "description": "Season composite score combining wins, points, playoffs, efficiency, and transactions.", "category": "Playoff"},
+    {"key": "power-ranking-trend", "title": "Power Ranking Trend", "description": "Each team's power-ranking movement week over week as a trend line.", "category": "Team & League Performance", "chart": "rank-trend"},
+    {"key": "expected-vs-actual-wins", "title": "Expected vs Actual Wins", "description": "Luck-adjusted record: wins implied by weekly scoring rank vs real wins.", "category": "Team & League Performance"},
+    {"key": "points-for-against", "title": "Points For / Against", "description": "Scatter of points scored vs points allowed with quadrant labeling.", "category": "Team & League Performance", "chart": "scatter"},
+    {"key": "strength-of-schedule", "title": "Strength of Schedule", "description": "Schedule difficulty already played and still remaining, per team.", "category": "Team & League Performance"},
+    {"key": "consistency-score", "title": "Consistency / Volatility", "description": "Standard deviation of weekly scores with floor and ceiling.", "category": "Team & League Performance"},
+    {"key": "all-play-standings", "title": "All-Play Standings", "description": "Record if every team played every other team each week, with win %.", "category": "Team & League Performance"},
+    {"key": "roster-efficiency", "title": "Roster Efficiency", "description": "Points scored vs optimal lineup points, tracked per week.", "category": "Team & League Performance"},
+    {"key": "bench-points-ranking", "title": "Bench Points Left on the Table", "description": "Optimal-minus-actual points left on the bench, ranked league-wide.", "category": "Team & League Performance"},
+    {"key": "margin-of-victory", "title": "Margin of Victory", "description": "Blowout and nailbiter distribution from weekly scoring margins.", "category": "Team & League Performance", "chart": "margin"},
+    {"key": "cumulative-points-race", "title": "Cumulative Points Race", "description": "Running points total over the full season as a race line chart.", "category": "Team & League Performance", "chart": "points-race"},
     {"key": "waiver-spend-efficiency", "title": "Waiver Spend Efficiency", "description": "FAAB dollars spent versus fantasy points gained from waiver and free-agent claims.", "category": "Waivers"},
     {"key": "waiver-pickup-leaderboard", "title": "Best & Worst Waiver Pickups", "description": "Season leaderboard of individual waiver/free-agent adds ranked by points produced after the add.", "category": "Waivers"},
     {"key": "trade-fairness", "title": "Trade Fairness Evaluator", "description": "Balances each completed trade by the rest-of-season production each side received.", "category": "Trade Analysis"},
@@ -110,7 +131,7 @@ def _handle_sleeper_error(exc: Exception, league_id: str = "") -> None:
 
 @router.get("/meta")
 def get_stats_meta() -> list[dict[str, str]]:
-    """Return metadata (key, title, description, category) for all stats."""
+    """Return metadata (key, title, description, category) for every stat."""
     return STAT_META
 
 
