@@ -97,6 +97,17 @@ class Settings(BaseSettings):
     # Sleeper fantasy football league integration
     SLEEPER_LEAGUE_ID: str = ""
 
+    # Anthropic / Claude integration for AI-generated narrative insights.
+    # When ANTHROPIC_API_KEY is empty the insights endpoints fall back to
+    # deterministic, template-based narratives so the app still works.
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-opus-4-8"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ai_insights_enabled(self) -> bool:
+        return bool(self.ANTHROPIC_API_KEY)
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

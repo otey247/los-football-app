@@ -18,6 +18,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSuperAdminRouteImport } from './routes/_layout/super-admin'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutInsightsRouteImport } from './routes/_layout/insights'
 import { Route as LayoutFantasyStatsRouteImport } from './routes/_layout/fantasy-stats'
 import { Route as LayoutBlogRouteImport } from './routes/_layout/blog'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
@@ -67,6 +68,11 @@ const LayoutItemsRoute = LayoutItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutInsightsRoute = LayoutInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutFantasyStatsRoute = LayoutFantasyStatsRouteImport.update({
   id: '/fantasy-stats',
   path: '/fantasy-stats',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
+  '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/blog': typeof LayoutBlogRouteWithChildren
   '/fantasy-stats': typeof LayoutFantasyStatsRoute
+  '/insights': typeof LayoutInsightsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/super-admin': typeof LayoutSuperAdminRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/blog': typeof LayoutBlogRouteWithChildren
   '/_layout/fantasy-stats': typeof LayoutFantasyStatsRoute
+  '/_layout/insights': typeof LayoutInsightsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/super-admin': typeof LayoutSuperAdminRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/blog'
     | '/fantasy-stats'
+    | '/insights'
     | '/items'
     | '/settings'
     | '/super-admin'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/blog'
     | '/fantasy-stats'
+    | '/insights'
     | '/items'
     | '/settings'
     | '/super-admin'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/blog'
     | '/_layout/fantasy-stats'
+    | '/_layout/insights'
     | '/_layout/items'
     | '/_layout/settings'
     | '/_layout/super-admin'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutItemsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/insights': {
+      id: '/_layout/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof LayoutInsightsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/fantasy-stats': {
       id: '/_layout/fantasy-stats'
       path: '/fantasy-stats'
@@ -298,6 +317,7 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutBlogRoute: typeof LayoutBlogRouteWithChildren
   LayoutFantasyStatsRoute: typeof LayoutFantasyStatsRoute
+  LayoutInsightsRoute: typeof LayoutInsightsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSuperAdminRoute: typeof LayoutSuperAdminRoute
@@ -308,6 +328,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutBlogRoute: LayoutBlogRouteWithChildren,
   LayoutFantasyStatsRoute: LayoutFantasyStatsRoute,
+  LayoutInsightsRoute: LayoutInsightsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSuperAdminRoute: LayoutSuperAdminRoute,
