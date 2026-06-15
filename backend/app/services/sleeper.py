@@ -1,7 +1,16 @@
-"""Sleeper Fantasy Football API service with in-memory caching."""
+"""Sleeper Fantasy Football API service with in-memory caching.
 
+Besides wrapping the read-only Sleeper endpoints, this module is lightly
+instrumented so the reporting layer can surface cache hit-rates, request
+volume (to stay under Sleeper's ~1,000 calls/minute guidance) and per-endpoint
+freshness/health (see :func:`get_cache_metrics` and :func:`get_endpoint_health`).
+"""
+
+import contextvars
+import re
+import threading
 import time
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from typing import Any
 
 import httpx
@@ -12,6 +21,69 @@ _CACHE: OrderedDict[str, tuple[float, Any]] = OrderedDict()
 _PLAYERS_TTL = 3600  # 1 hour – Sleeper recommends calling /players sparingly
 _DEFAULT_TTL = 300   # 5 minutes
 _MAX_CACHE_SIZE = 1024
+
+# Sleeper publishes a soft limit of roughly 1,000 API calls per minute.
+RATE_LIMIT_PER_MINUTE = 1000
+
+# ---------------------------------------------------------------------------
+# Instrumentation (cache + rate-limit + freshness analytics)
+# ---------------------------------------------------------------------------
+_metrics_lock = threading.Lock()
+_metrics = {"hits": 0, "misses": 0, "errors": 0}
+# Monotonic timestamps of outbound network calls, for a rolling per-minute rate.
+_call_times: deque[float] = deque(maxlen=4096)
+# Per-endpoint health: label -> {success_count, error_count, last_success, last_error, last_error_message}
+_endpoint_state: dict[str, dict[str, Any]] = {}
+
+
+def _endpoint_label(url: str) -> str:
+    """Map a Sleeper URL to a coarse, ID-free label for analytics grouping."""
+    path = url.replace(SLEEPER_BASE_URL, "")
+    rules: list[tuple[str, str]] = [
+        (r"^/league/[^/]+/matchups/\d+", "matchups"),
+        (r"^/league/[^/]+/transactions/\d+", "transactions"),
+        (r"^/league/[^/]+/rosters", "rosters"),
+        (r"^/league/[^/]+/users", "users"),
+        (r"^/league/[^/]+/drafts", "drafts"),
+        (r"^/league/[^/]+/traded_picks", "traded_picks"),
+        (r"^/league/[^/]+/winners_bracket", "winners_bracket"),
+        (r"^/league/[^/]+/losers_bracket", "losers_bracket"),
+        (r"^/league/[^/]+$", "league"),
+        (r"^/draft/[^/]+/picks", "draft_picks"),
+        (r"^/players/nfl", "players"),
+        (r"^/stats/nfl", "player_stats"),
+        (r"^/state/nfl", "nfl_state"),
+        (r"^/user/[^/]+/leagues", "user_leagues"),
+        (r"^/user/", "user"),
+    ]
+    for pattern, label in rules:
+        if re.match(pattern, path):
+            return label
+    return "other"
+
+
+def _record_call(label: str, *, error: bool, message: str = "") -> None:
+    now_wall = time.time()
+    with _metrics_lock:
+        _call_times.append(time.monotonic())
+        state = _endpoint_state.setdefault(
+            label,
+            {
+                "success_count": 0,
+                "error_count": 0,
+                "last_success": None,
+                "last_error": None,
+                "last_error_message": None,
+            },
+        )
+        if error:
+            _metrics["errors"] += 1
+            state["error_count"] += 1
+            state["last_error"] = now_wall
+            state["last_error_message"] = message[:300]
+        else:
+            state["success_count"] += 1
+            state["last_success"] = now_wall
 
 
 def _purge_expired(now: float) -> None:
@@ -34,19 +106,97 @@ def _get(url: str, ttl: int = _DEFAULT_TTL) -> Any:
         expires_at, data = _CACHE[url]
         if now < expires_at:
             _CACHE.move_to_end(url)
+            with _metrics_lock:
+                _metrics["hits"] += 1
             return data
         _CACHE.pop(url, None)
 
-    with httpx.Client(timeout=15) as client:
-        response = client.get(url)
-        response.raise_for_status()
-        data = response.json()
+    with _metrics_lock:
+        _metrics["misses"] += 1
+    label = _endpoint_label(url)
+    try:
+        with httpx.Client(timeout=15) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            data = response.json()
+    except Exception as exc:  # noqa: BLE001 - record then re-raise for callers
+        _record_call(label, error=True, message=str(exc))
+        raise
+    _record_call(label, error=False)
 
     _CACHE[url] = (now + ttl, data)
     _CACHE.move_to_end(url)
     if len(_CACHE) > _MAX_CACHE_SIZE:
         _CACHE.popitem(last=False)
     return data
+
+
+def get_cache_metrics() -> dict[str, Any]:
+    """Cache hit-rate and rolling request volume for the analytics dashboard."""
+    cutoff = time.monotonic() - 60
+    with _metrics_lock:
+        hits = _metrics["hits"]
+        misses = _metrics["misses"]
+        errors = _metrics["errors"]
+        calls_last_minute = sum(1 for t in _call_times if t >= cutoff)
+    total_lookups = hits + misses
+    hit_rate = round(hits / total_lookups * 100, 1) if total_lookups else 0.0
+    headroom = max(0.0, RATE_LIMIT_PER_MINUTE - calls_last_minute)
+    return {
+        "cache_entries": len(_CACHE),
+        "max_cache_size": _MAX_CACHE_SIZE,
+        "hits": hits,
+        "misses": misses,
+        "errors": errors,
+        "total_lookups": total_lookups,
+        "hit_rate_pct": hit_rate,
+        "network_calls": misses + errors,
+        "calls_last_minute": calls_last_minute,
+        "rate_limit_per_minute": RATE_LIMIT_PER_MINUTE,
+        "rate_limit_used_pct": round(
+            calls_last_minute / RATE_LIMIT_PER_MINUTE * 100, 1
+        ),
+        "rate_limit_headroom": int(headroom),
+    }
+
+
+def get_endpoint_health() -> list[dict[str, Any]]:
+    """Per-endpoint success/error counts and age of the last successful fetch."""
+    now_wall = time.time()
+    rows: list[dict[str, Any]] = []
+    with _metrics_lock:
+        items = [(label, dict(state)) for label, state in _endpoint_state.items()]
+    for label, state in items:
+        last_success = state["last_success"]
+        last_error = state["last_error"]
+        rows.append(
+            {
+                "endpoint": label,
+                "success_count": state["success_count"],
+                "error_count": state["error_count"],
+                "last_success_age_seconds": (
+                    round(now_wall - last_success, 1)
+                    if last_success is not None
+                    else None
+                ),
+                "last_error_age_seconds": (
+                    round(now_wall - last_error, 1)
+                    if last_error is not None
+                    else None
+                ),
+                "last_error_message": state["last_error_message"],
+            }
+        )
+    rows.sort(key=lambda r: r["endpoint"])
+    return rows
+
+
+def reset_metrics() -> None:
+    """Clear all instrumentation counters (used by tests)."""
+    with _metrics_lock:
+        _metrics.update({"hits": 0, "misses": 0, "errors": 0})
+        _call_times.clear()
+        _endpoint_state.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +258,16 @@ def get_nfl_state() -> dict[str, Any]:
     return _get(f"{SLEEPER_BASE_URL}/state/nfl", ttl=60)
 
 
+def get_user(username_or_id: str) -> dict[str, Any]:
+    """Look up a Sleeper user by username or numeric user_id."""
+    return _get(f"{SLEEPER_BASE_URL}/user/{username_or_id}")
+
+
+def get_user_leagues(user_id: str, season: str) -> list[dict[str, Any]]:
+    """All NFL leagues a user belongs to for a given season."""
+    return _get(f"{SLEEPER_BASE_URL}/user/{user_id}/leagues/nfl/{season}")
+
+
 # ---------------------------------------------------------------------------
 # Helper builders
 # ---------------------------------------------------------------------------
@@ -131,15 +291,49 @@ def _roster_user_map(
 
 
 # ---------------------------------------------------------------------------
+# Week-range window (custom date/week filtering on all analytics)
+# ---------------------------------------------------------------------------
+# Every stat collects weeks via ``_collect_all_matchups`` /
+# ``_collect_all_transactions``. Rather than thread a start-week argument through
+# all 25 stat functions, the active window's first week is held in a contextvar
+# that the collectors honour. The endpoint layer sets it per request with
+# ``week_window`` and it defaults to 1 (full season) everywhere else.
+_window_start: contextvars.ContextVar[int] = contextvars.ContextVar(
+    "sleeper_window_start", default=1
+)
+
+
+class week_window:  # noqa: N801 - used as a context manager
+    """Restrict analytics collectors to weeks >= ``start`` for the block."""
+
+    def __init__(self, start: int | None) -> None:
+        self.start = max(1, start or 1)
+        self._token: contextvars.Token[int] | None = None
+
+    def __enter__(self) -> "week_window":
+        self._token = _window_start.set(self.start)
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        if self._token is not None:
+            _window_start.reset(self._token)
+            self._token = None
+
+
+# ---------------------------------------------------------------------------
 # Stats calculators
 # ---------------------------------------------------------------------------
 
 def _collect_all_matchups(
     league_id: str, current_week: int
 ) -> dict[int, list[dict[str, Any]]]:
-    """Return {week: [matchup_row, ...]} for weeks 1..current_week."""
+    """Return {week: [matchup_row, ...]} for the active window up to current_week.
+
+    The window's first week comes from the ``week_window`` contextvar (default 1).
+    """
+    start = min(_window_start.get(), current_week)
     all_matchups: dict[int, list[dict[str, Any]]] = {}
-    for w in range(1, current_week + 1):
+    for w in range(start, current_week + 1):
         try:
             all_matchups[w] = get_matchups(league_id, w)
         except httpx.HTTPError:
@@ -615,8 +809,9 @@ def stat_dead_lineup_penalty(
 
 
 def _collect_all_transactions(league_id: str, current_week: int) -> list[dict[str, Any]]:
+    start = min(_window_start.get(), current_week)
     txns: list[dict[str, Any]] = []
-    for w in range(1, current_week + 1):
+    for w in range(start, current_week + 1):
         try:
             txns.extend(get_transactions(league_id, w))
         except httpx.HTTPError:

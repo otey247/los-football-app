@@ -2,6 +2,7 @@ import {
   BarChart3,
   BookOpen,
   Briefcase,
+  Database,
   Home,
   ShieldCheck,
   Sparkles,
@@ -24,6 +25,7 @@ const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: BarChart3, title: "Fantasy Stats", path: "/fantasy-stats" },
   { icon: Sparkles, title: "Insights", path: "/insights" },
+  { icon: Database, title: "Reporting", path: "/reporting" },
   { icon: BookOpen, title: "Blog", path: "/blog" },
   { icon: Briefcase, title: "Items", path: "/items" },
 ]

@@ -4,11 +4,12 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
+  Download,
   Info,
   Loader2,
   Trophy,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,7 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { SleeperService, type SleeperStatMeta } from "@/lib/footballApi"
+import {
+  ReportingService,
+  SleeperService,
+  type SleeperStatMeta,
+} from "@/lib/footballApi"
 
 export const Route = createFileRoute("/_layout/fantasy-stats")({
   component: FantasyStats,
@@ -102,17 +107,42 @@ interface StatCardProps {
   meta: SleeperStatMeta
   leagueId: string
   week?: number
+  startWeek?: number
 }
 
-function StatCard({ meta, leagueId, week }: StatCardProps) {
+function StatCard({ meta, leagueId, week, startWeek }: StatCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["sleeper-stat", meta.key, leagueId, week],
-    queryFn: () => SleeperService.getStat(meta.key, leagueId, week),
+    queryKey: ["sleeper-stat", meta.key, leagueId, week, startWeek],
+    queryFn: () => SleeperService.getStat(meta.key, leagueId, week, startWeek),
     enabled: !!leagueId && expanded,
     retry: false,
   })
+
+  // #79 Record which stat cards managers actually open.
+  useEffect(() => {
+    if (expanded && leagueId) {
+      ReportingService.recordUsage("card_open", meta.key, "/fantasy-stats")
+    }
+  }, [expanded, leagueId, meta.key])
+
+  const handleExport = async (format: "csv" | "json") => {
+    setExporting(true)
+    try {
+      await SleeperService.exportStat(
+        meta.key,
+        format,
+        leagueId,
+        week,
+        startWeek,
+      )
+      ReportingService.recordUsage("export", `${meta.key}:${format}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <Card className="overflow-hidden transition-[background-color,box-shadow,transform] hover:-translate-y-0.5 hover:bg-card">
@@ -159,17 +189,43 @@ function StatCard({ meta, leagueId, week }: StatCardProps) {
             </div>
           )}
           {data && Array.isArray(data) && data.length > 0 && (
-            <div className="divide-y divide-border/60">
-              {(data as Record<string, unknown>[])
-                .slice(0, 12)
-                .map((row, i) => (
-                  <StatRow
-                    key={(row.roster_id as string) ?? i}
-                    row={row}
-                    index={i}
-                  />
-                ))}
-            </div>
+            <>
+              <div className="divide-y divide-border/60">
+                {(data as Record<string, unknown>[])
+                  .slice(0, 12)
+                  .map((row, i) => (
+                    <StatRow
+                      key={(row.roster_id as string) ?? i}
+                      row={row}
+                      index={i}
+                    />
+                  ))}
+              </div>
+              {/* #75 CSV / JSON export */}
+              <div className="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-3">
+                <span className="mr-auto text-xs text-muted-foreground">
+                  Export this table
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={exporting}
+                  onClick={() => handleExport("csv")}
+                >
+                  <Download className="mr-1 h-3 w-3" /> CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={exporting}
+                  onClick={() => handleExport("json")}
+                >
+                  <Download className="mr-1 h-3 w-3" /> JSON
+                </Button>
+              </div>
+            </>
           )}
           {data && Array.isArray(data) && data.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -188,6 +244,16 @@ function FantasyStats() {
   )
   const [inputLeagueId, setInputLeagueId] = useState(leagueId)
   const [filterCategory, setFilterCategory] = useState<string>("all")
+  // #77 Custom week-range filtering applied to every stat card.
+  const [startWeek, setStartWeek] = useState<string>("")
+  const [endWeek, setEndWeek] = useState<string>("")
+
+  useEffect(() => {
+    ReportingService.recordUsage("page_view", "fantasy-stats", "/fantasy-stats")
+  }, [])
+
+  const startWeekNum = startWeek ? Number(startWeek) : undefined
+  const endWeekNum = endWeek ? Number(endWeek) : undefined
 
   const {
     data: statsMeta,
@@ -299,6 +365,30 @@ function FantasyStats() {
             {filteredStats.length} stat{filteredStats.length !== 1 ? "s" : ""}
           </span>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          <Label className="text-sm font-bold text-muted-foreground">
+            Week range:
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            max={18}
+            placeholder="From"
+            value={startWeek}
+            onChange={(e) => setStartWeek(e.target.value)}
+            className="h-8 w-20 text-sm"
+          />
+          <span className="text-xs text-muted-foreground">to</span>
+          <Input
+            type="number"
+            min={1}
+            max={18}
+            placeholder="Latest"
+            value={endWeek}
+            onChange={(e) => setEndWeek(e.target.value)}
+            className="h-8 w-20 text-sm"
+          />
+        </div>
       </div>
 
       {/* Stats grid */}
@@ -324,7 +414,13 @@ function FantasyStats() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredStats?.map((meta) => (
-            <StatCard key={meta.key} meta={meta} leagueId={leagueId} />
+            <StatCard
+              key={meta.key}
+              meta={meta}
+              leagueId={leagueId}
+              week={endWeekNum}
+              startWeek={startWeekNum}
+            />
           ))}
         </div>
       )}
